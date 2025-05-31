@@ -6,7 +6,23 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A42C6EBA2DDDD94E00BB4528 /* TProAthleteWatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A42C6EB02DDDD94D00BB4528 /* TProAthleteWatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A4BD434A2DCFB68800DEEA3A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A4BD43492DCFB68800DEEA3A /* FirebaseFirestore */; };
+		A4BD434C2DCFB68800DEEA3A /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = A4BD434B2DCFB68800DEEA3A /* FirebaseFirestoreSwift */; };
+		A4C41E2F2DEB1D9F00DFDC30 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A4C41E2E2DEB1D9F00DFDC30 /* FirebaseAuth */; };
+		A4D99D202DDDEE81001C4A3E /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4D99D1F2DDDEE81001C4A3E /* WatchConnectivity.framework */; platformFilters = (ios, xros, ); };
+		A4D99D222DDDF07F001C4A3E /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4D99D212DDDF07F001C4A3E /* WatchConnectivity.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		A42C6EB82DDDD94E00BB4528 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A4EA18BB2DC02AA100E716C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A42C6EAF2DDDD94D00BB4528;
+			remoteInfo = "TProAthleteWatchApp Watch App";
+		};
 		A4EA18D22DC02AA300E716C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A4EA18BB2DC02AA100E716C7 /* Project object */;
@@ -23,15 +39,50 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A482EDA92DDCC916007822E2 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				A42C6EBA2DDDD94E00BB4528 /* TProAthleteWatchApp Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		A4EA18C32DC02AA100E716C7 /* PunchKickTraining.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PunchKickTraining.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A4EA18D12DC02AA300E716C7 /* PunchKickTrainingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PunchKickTrainingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A4EA18DB2DC02AA300E716C7 /* PunchKickTrainingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PunchKickTrainingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A42C6EB02DDDD94D00BB4528 /* TProAthleteWatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TProAthleteWatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4D99D1F2DDDEE81001C4A3E /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
+		A4D99D212DDDF07F001C4A3E /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.4.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
+		A4EA18C32DC02AA100E716C7 /* TProAthlete.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TProAthlete.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4EA18D12DC02AA300E716C7 /* TProAthleteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TProAthleteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4EA18DB2DC02AA300E716C7 /* TProAthleteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TProAthleteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A47AA6252DCF707F0027E681 /* Exceptions for "PunchKickTraining" folder in "TProAthlete" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A4EA18C22DC02AA100E716C7 /* TProAthlete */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A4EA18C52DC02AA100E716C7 /* PunchKickTraining */ = {
+		A42C6EB12DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "TProAthleteWatchApp Watch App";
+			sourceTree = "<group>";
+		};
+		A4A5484A2DCF67830086B437 /* PunchKickTraining */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A47AA6252DCF707F0027E681 /* Exceptions for "PunchKickTraining" folder in "TProAthlete" target */,
+			);
 			path = PunchKickTraining;
 			sourceTree = "<group>";
 		};
@@ -48,10 +99,22 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A42C6EAD2DDDD94D00BB4528 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A4D99D222DDDF07F001C4A3E /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4EA18C02DC02AA100E716C7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A4D99D202DDDEE81001C4A3E /* WatchConnectivity.framework in Frameworks */,
+				A4BD434A2DCFB68800DEEA3A /* FirebaseFirestore in Frameworks */,
+				A4BD434C2DCFB68800DEEA3A /* FirebaseFirestoreSwift in Frameworks */,
+				A4C41E2F2DEB1D9F00DFDC30 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +135,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A47AA6372DCF82170027E681 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A4D99D212DDDF07F001C4A3E /* WatchConnectivity.framework */,
+				A4D99D1F2DDDEE81001C4A3E /* WatchConnectivity.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A4EA18BA2DC02AA100E716C7 = {
 			isa = PBXGroup;
 			children = (
-				A4EA18C52DC02AA100E716C7 /* PunchKickTraining */,
+				A4A5484A2DCF67830086B437 /* PunchKickTraining */,
 				A4EA18D42DC02AA300E716C7 /* PunchKickTrainingTests */,
 				A4EA18DE2DC02AA300E716C7 /* PunchKickTrainingUITests */,
+				A42C6EB12DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */,
+				A47AA6372DCF82170027E681 /* Frameworks */,
 				A4EA18C42DC02AA100E716C7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +159,10 @@
 		A4EA18C42DC02AA100E716C7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A4EA18C32DC02AA100E716C7 /* PunchKickTraining.app */,
-				A4EA18D12DC02AA300E716C7 /* PunchKickTrainingTests.xctest */,
-				A4EA18DB2DC02AA300E716C7 /* PunchKickTrainingUITests.xctest */,
+				A4EA18C32DC02AA100E716C7 /* TProAthlete.app */,
+				A4EA18D12DC02AA300E716C7 /* TProAthleteTests.xctest */,
+				A4EA18DB2DC02AA300E716C7 /* TProAthleteUITests.xctest */,
+				A42C6EB02DDDD94D00BB4528 /* TProAthleteWatchApp Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,31 +170,58 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A4EA18C22DC02AA100E716C7 /* PunchKickTraining */ = {
+		A42C6EAF2DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A4EA18E52DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTraining" */;
+			buildConfigurationList = A42C6EBB2DDDD94E00BB4528 /* Build configuration list for PBXNativeTarget "TProAthleteWatchApp Watch App" */;
 			buildPhases = (
-				A4EA18BF2DC02AA100E716C7 /* Sources */,
-				A4EA18C02DC02AA100E716C7 /* Frameworks */,
-				A4EA18C12DC02AA100E716C7 /* Resources */,
+				A42C6EAC2DDDD94D00BB4528 /* Sources */,
+				A42C6EAD2DDDD94D00BB4528 /* Frameworks */,
+				A42C6EAE2DDDD94D00BB4528 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A4EA18C52DC02AA100E716C7 /* PunchKickTraining */,
+				A42C6EB12DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */,
 			);
-			name = PunchKickTraining;
+			name = "TProAthleteWatchApp Watch App";
 			packageProductDependencies = (
 			);
-			productName = PunchKickTraining;
-			productReference = A4EA18C32DC02AA100E716C7 /* PunchKickTraining.app */;
+			productName = "TProAthleteWatchApp Watch App";
+			productReference = A42C6EB02DDDD94D00BB4528 /* TProAthleteWatchApp Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A4EA18D02DC02AA300E716C7 /* PunchKickTrainingTests */ = {
+		A4EA18C22DC02AA100E716C7 /* TProAthlete */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A4EA18E82DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTrainingTests" */;
+			buildConfigurationList = A4EA18E52DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthlete" */;
+			buildPhases = (
+				A4EA18BF2DC02AA100E716C7 /* Sources */,
+				A4EA18C02DC02AA100E716C7 /* Frameworks */,
+				A4EA18C12DC02AA100E716C7 /* Resources */,
+				A482EDA92DDCC916007822E2 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A42C6EB92DDDD94E00BB4528 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A4A5484A2DCF67830086B437 /* PunchKickTraining */,
+			);
+			name = TProAthlete;
+			packageProductDependencies = (
+				A4BD43492DCFB68800DEEA3A /* FirebaseFirestore */,
+				A4BD434B2DCFB68800DEEA3A /* FirebaseFirestoreSwift */,
+				A4C41E2E2DEB1D9F00DFDC30 /* FirebaseAuth */,
+			);
+			productName = PunchKickTraining;
+			productReference = A4EA18C32DC02AA100E716C7 /* TProAthlete.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A4EA18D02DC02AA300E716C7 /* TProAthleteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A4EA18E82DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthleteTests" */;
 			buildPhases = (
 				A4EA18CD2DC02AA300E716C7 /* Sources */,
 				A4EA18CE2DC02AA300E716C7 /* Frameworks */,
@@ -133,16 +235,16 @@
 			fileSystemSynchronizedGroups = (
 				A4EA18D42DC02AA300E716C7 /* PunchKickTrainingTests */,
 			);
-			name = PunchKickTrainingTests;
+			name = TProAthleteTests;
 			packageProductDependencies = (
 			);
 			productName = PunchKickTrainingTests;
-			productReference = A4EA18D12DC02AA300E716C7 /* PunchKickTrainingTests.xctest */;
+			productReference = A4EA18D12DC02AA300E716C7 /* TProAthleteTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A4EA18DA2DC02AA300E716C7 /* PunchKickTrainingUITests */ = {
+		A4EA18DA2DC02AA300E716C7 /* TProAthleteUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A4EA18EB2DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTrainingUITests" */;
+			buildConfigurationList = A4EA18EB2DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthleteUITests" */;
 			buildPhases = (
 				A4EA18D72DC02AA300E716C7 /* Sources */,
 				A4EA18D82DC02AA300E716C7 /* Frameworks */,
@@ -156,11 +258,11 @@
 			fileSystemSynchronizedGroups = (
 				A4EA18DE2DC02AA300E716C7 /* PunchKickTrainingUITests */,
 			);
-			name = PunchKickTrainingUITests;
+			name = TProAthleteUITests;
 			packageProductDependencies = (
 			);
 			productName = PunchKickTrainingUITests;
-			productReference = A4EA18DB2DC02AA300E716C7 /* PunchKickTrainingUITests.xctest */;
+			productReference = A4EA18DB2DC02AA300E716C7 /* TProAthleteUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -173,6 +275,9 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					A42C6EAF2DDDD94D00BB4528 = {
+						CreatedOnToolsVersion = 16.3;
+					};
 					A4EA18C22DC02AA100E716C7 = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -186,7 +291,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A4EA18BE2DC02AA100E716C7 /* Build configuration list for PBXProject "PunchKickTraining" */;
+			buildConfigurationList = A4EA18BE2DC02AA100E716C7 /* Build configuration list for PBXProject "TProAthlete" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -195,19 +300,30 @@
 			);
 			mainGroup = A4EA18BA2DC02AA100E716C7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A4BD43482DCFB68800DEEA3A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A4EA18C42DC02AA100E716C7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A4EA18C22DC02AA100E716C7 /* PunchKickTraining */,
-				A4EA18D02DC02AA300E716C7 /* PunchKickTrainingTests */,
-				A4EA18DA2DC02AA300E716C7 /* PunchKickTrainingUITests */,
+				A4EA18C22DC02AA100E716C7 /* TProAthlete */,
+				A4EA18D02DC02AA300E716C7 /* TProAthleteTests */,
+				A4EA18DA2DC02AA300E716C7 /* TProAthleteUITests */,
+				A42C6EAF2DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A42C6EAE2DDDD94D00BB4528 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4EA18C12DC02AA100E716C7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -232,6 +348,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A42C6EAC2DDDD94D00BB4528 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4EA18BF2DC02AA100E716C7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -256,19 +379,85 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A42C6EB92DDDD94E00BB4528 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A42C6EAF2DDDD94D00BB4528 /* TProAthleteWatchApp Watch App */;
+			targetProxy = A42C6EB82DDDD94E00BB4528 /* PBXContainerItemProxy */;
+		};
 		A4EA18D32DC02AA300E716C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A4EA18C22DC02AA100E716C7 /* PunchKickTraining */;
+			target = A4EA18C22DC02AA100E716C7 /* TProAthlete */;
 			targetProxy = A4EA18D22DC02AA300E716C7 /* PBXContainerItemProxy */;
 		};
 		A4EA18DD2DC02AA300E716C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A4EA18C22DC02AA100E716C7 /* PunchKickTraining */;
+			target = A4EA18C22DC02AA100E716C7 /* TProAthlete */;
 			targetProxy = A4EA18DC2DC02AA300E716C7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A42C6EBC2DDDD94E00BB4528 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 696RGB9D2T;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "TProAthleteWatchApp-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = TProAthleteWatchApp;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.jeckytoledo.TProAthlete;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeckytoledo.TProAthlete.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.4;
+			};
+			name = Debug;
+		};
+		A42C6EBD2DDDD94E00BB4528 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 696RGB9D2T;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "TProAthleteWatchApp-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = TProAthleteWatchApp;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.jeckytoledo.TProAthlete;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeckytoledo.TProAthlete.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.4;
+			};
+			name = Release;
+		};
 		A4EA18E32DC02AA300E716C7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -391,12 +580,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PunchKickTraining/PunchKickTraining.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 696RGB9D2T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PunchKickTraining/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DopaPro;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses BlueTooth to connect your puch tracker system\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<string>This app uses Bluetooth to connect to your punch sensor</string>\n</plist>\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<string>This app uses Bluetooth to connect to your punch sensor</string>\n</plist>\nThis app uses Bluetooth to connect your punchKick tracker.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -412,7 +606,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.3;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toledo.PunchKickTraining;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeckytoledo.TProAthlete;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -430,12 +624,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PunchKickTraining/PunchKickTraining.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 696RGB9D2T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PunchKickTraining/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DopaPro;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses BlueTooth to connect your puch tracker system\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<string>This app uses Bluetooth to connect to your punch sensor</string>\n</plist>\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<string>This app uses Bluetooth to connect to your punch sensor</string>\n</plist>\nThis app uses Bluetooth to connect your punchKick tracker.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -451,7 +650,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.3;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toledo.PunchKickTraining;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeckytoledo.TProAthlete;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -481,7 +680,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PunchKickTraining.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PunchKickTraining";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TProAthlete.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TProAthlete";
 				XROS_DEPLOYMENT_TARGET = 2.4;
 			};
 			name = Debug;
@@ -504,7 +703,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PunchKickTraining.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PunchKickTraining";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TProAthlete.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TProAthlete";
 				XROS_DEPLOYMENT_TARGET = 2.4;
 			};
 			name = Release;
@@ -556,7 +755,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A4EA18BE2DC02AA100E716C7 /* Build configuration list for PBXProject "PunchKickTraining" */ = {
+		A42C6EBB2DDDD94E00BB4528 /* Build configuration list for PBXNativeTarget "TProAthleteWatchApp Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A42C6EBC2DDDD94E00BB4528 /* Debug */,
+				A42C6EBD2DDDD94E00BB4528 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A4EA18BE2DC02AA100E716C7 /* Build configuration list for PBXProject "TProAthlete" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A4EA18E32DC02AA300E716C7 /* Debug */,
@@ -565,7 +773,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A4EA18E52DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTraining" */ = {
+		A4EA18E52DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthlete" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A4EA18E62DC02AA300E716C7 /* Debug */,
@@ -574,7 +782,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A4EA18E82DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTrainingTests" */ = {
+		A4EA18E82DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthleteTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A4EA18E92DC02AA300E716C7 /* Debug */,
@@ -583,7 +791,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A4EA18EB2DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "PunchKickTrainingUITests" */ = {
+		A4EA18EB2DC02AA300E716C7 /* Build configuration list for PBXNativeTarget "TProAthleteUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A4EA18EC2DC02AA300E716C7 /* Debug */,
@@ -593,6 +801,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A4BD43482DCFB68800DEEA3A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A4BD43492DCFB68800DEEA3A /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4BD43482DCFB68800DEEA3A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		A4BD434B2DCFB68800DEEA3A /* FirebaseFirestoreSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4BD43482DCFB68800DEEA3A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestoreSwift;
+		};
+		A4C41E2E2DEB1D9F00DFDC30 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4BD43482DCFB68800DEEA3A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A4EA18BB2DC02AA100E716C7 /* Project object */;
 }
