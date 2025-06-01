@@ -27,6 +27,7 @@ struct HomeScreen: View {
     @State private var navigationIntent: NavigationIntent? = nil
     @AppStorage("nickname") private var nickname: String = ""
     @State private var isShowingDownloadModal = false
+    @State private var isShowingChallengeModal = false
 
     var body: some View {
         NavigationView {
@@ -114,35 +115,56 @@ struct HomeScreen: View {
                         }
                     }
 
-                    HStack(spacing: 20) {
-                        Button(action: {
-                            navigationIntent = .creating
-                        }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("New Training")
-                                    .fontWeight(.bold)
+                    // MARK: - Button Section
+                    VStack(spacing: 12) {
+                        HStack(spacing: 20) {
+                            Button(action: {
+                                navigationIntent = .creating
+                            }) {
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("New Training")
+                                        .fontWeight(.bold)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity)
+                                .foregroundColor(.white)
+                                .background(Color.blue)
+                                .cornerRadius(10)
                             }
-                            .padding(10)
-                            .foregroundColor(.white)
-                            .background(Color.blue)
-                            .cornerRadius(10)
+
+                            Button(action: {
+                                isShowingDownloadModal = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.down.circle")
+                                    Text("Download")
+                                        .fontWeight(.bold)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity)
+                                .foregroundColor(.white)
+                                .background(Color.orange)
+                                .cornerRadius(10)
+                            }
                         }
 
                         Button(action: {
-                            isShowingDownloadModal = true
+                            isShowingChallengeModal = true
                         }) {
                             HStack {
-                                Image(systemName: "arrow.down.circle")
-                                Text(" Download ")
+                                Image(systemName: "flag.checkered")
+                                Text("Challenge")
                                     .fontWeight(.bold)
                             }
                             .padding(10)
+                            .frame(maxWidth: .infinity)
                             .foregroundColor(.white)
-                            .background(Color.orange)
+                            .background(Color.purple)
                             .cornerRadius(10)
                         }
                     }
+                    .padding(.horizontal)
                     .padding(.vertical, 16)
                 }
             }
@@ -162,6 +184,9 @@ struct HomeScreen: View {
             }
             .sheet(isPresented: $isShowingDownloadModal) {
                 DownloadPublicTrainingsView(onDownload: handleDownloadedPublicTraining)
+            }
+            .sheet(isPresented: $isShowingChallengeModal) {
+                ChallengeHomeView()
             }
         }
     }
