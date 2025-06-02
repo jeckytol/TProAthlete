@@ -7,84 +7,103 @@ struct NewChallengeView: View {
     @State private var difficulty: Int = 0
     @State private var comment: String = ""
 
+    var isSaveEnabled: Bool {
+        !challengeName.isEmpty
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 20) {
+
+            VStack(spacing: 0) {
+                // Header
+                VStack(alignment: .leading, spacing: 4) {
                     Text("New Challenge")
-                        .font(.largeTitle.bold())
+                        .font(.title.bold())
                         .foregroundColor(.white)
-                        .padding(.top)
+                        .padding(.horizontal)
 
-                    // Challenge Name
-                    TextField("< Enter Challenge Name >", text: $challengeName)
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.white)
-                        .italic()
-                        .bold()
-                        .cornerRadius(8)
+                    Divider().background(Color.gray)
+                }
+                .padding(.top)
 
-                    // Challenge Date
-                    DatePicker("Challenge Date & Time", selection: $challengeDate)
-                        .colorScheme(.dark)
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(8)
-                        .foregroundColor(.white)
-
-                    // Difficulty Stars
-                    VStack(alignment: .leading) {
-                        Text("Difficulty")
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Challenge Name
+                        TextField("< Enter Challenge Name >", text: $challengeName)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
                             .foregroundColor(.white)
-                            .font(.headline)
+                            .italic()
+                            .bold()
+                            .cornerRadius(8)
+
+                        // Challenge Date
+                        DatePicker("Challenge Date & Time", selection: $challengeDate)
+                            .colorScheme(.dark)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(8)
+                            .foregroundColor(.white)
+
+                        // Difficulty Row
                         HStack {
-                            ForEach(1...5, id: \.self) { index in
-                                Image(systemName: index <= difficulty ? "star.fill" : "star")
-                                    .foregroundColor(.yellow)
-                                    .font(.title2)
-                                    .onTapGesture {
-                                        difficulty = index
-                                    }
+                            Text("Difficulty")
+                                .foregroundColor(.white)
+                                .font(.headline)
+
+                            Spacer()
+
+                            HStack {
+                                ForEach(1...5, id: \.self) { index in
+                                    Image(systemName: index <= difficulty ? "star.fill" : "star")
+                                        .foregroundColor(.white)
+                                        .font(.title2)
+                                        .onTapGesture {
+                                            difficulty = index
+                                        }
+                                }
                             }
                         }
-                    }
 
-                    //----------------------------
-                    // Comment Box
-                    
-                    VStack(alignment: .leading) {
-                        Text("Comment")
-                            .foregroundColor(.white)
-                            .font(.headline)
+                        // Comment
+                        VStack(alignment: .leading) {
+                            Text("Comment")
+                                .foregroundColor(.white)
+                                .font(.headline)
 
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.gray.opacity(0.2))
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.2))
 
-                            CustomTextEditor(text: $comment)
-                                .frame(height: 120)
+                                CustomTextEditor(text: $comment)
+                                    .frame(height: 120)
+                                    .foregroundColor(.white)
+                            }
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))
                         }
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))
                     }
-
-                    //-----
-                    Button(action: {
-                        // Handle save logic
-                        dismiss()
-                    }) {
-                        Text("Save Challenge")
-                            .bold()
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.green)
-                            .cornerRadius(10)
-                    }
+                    .padding()
                 }
-                .padding()
+
+                // Save Button at Bottom
+                Button(action: {
+                    dismiss()
+                }) {
+                    Text("Save Challenge")
+                        .bold()
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(isSaveEnabled ? Color.green : Color.gray, lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                        .padding([.horizontal, .bottom])
+                }
+                .disabled(!isSaveEnabled)
             }
         }
         .onTapGesture {
