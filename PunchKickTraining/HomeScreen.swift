@@ -34,12 +34,18 @@ struct HomeScreen: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    Text("Dopamineo Trainings")
+                //VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Your Dopa Trainings")
                         .font(.largeTitle.bold())
                         .foregroundColor(.white)
-                        .padding(.top, 20)
-                        .padding(.bottom, 12)
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                        //.padding(.bottom, 12)
+                    
+                    Divider()
+                        .background(Color.gray)
+                        .padding(.bottom, 8)
 
                     if trainings.isEmpty {
                         Spacer()
@@ -61,7 +67,7 @@ struct HomeScreen: View {
                                                     .foregroundColor(.white)
                                                 if training.isPublic {
                                                     Image(systemName: "person.2.fill")
-                                                        .foregroundColor(.yellow)
+                                                        .foregroundColor(.gray)
                                                 }
                                             }
                                             Text("\(training.rounds.count) rounds")
@@ -85,7 +91,7 @@ struct HomeScreen: View {
                                                     navigationIntent = .editing(training)
                                                 }) {
                                                     Image(systemName: "pencil")
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(.gray)
                                                 }
                                                 .buttonStyle(.borderless)
                                             }
@@ -94,7 +100,7 @@ struct HomeScreen: View {
                                                 deleteTraining(training)
                                             }) {
                                                 Image(systemName: "trash")
-                                                    .foregroundColor(.red)
+                                                    .foregroundColor(.gray)
                                             }
                                             .buttonStyle(.borderless)
                                         }
@@ -115,53 +121,43 @@ struct HomeScreen: View {
                         }
                     }
 
-                    // MARK: - Button Section
                     VStack(spacing: 12) {
                         HStack(spacing: 20) {
                             Button(action: {
                                 navigationIntent = .creating
                             }) {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("New Training")
-                                        .fontWeight(.bold)
-                                }
-                                .padding(10)
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.white)
-                                .background(Color.blue)
-                                .cornerRadius(10)
+                                Label("New Training", systemImage: "plus.circle.fill")
+                                    .fontWeight(.bold)
+                                    .padding(10)
+                                    .frame(maxWidth: .infinity)
+                                    .foregroundColor(.white)
+                                    .background(Color.black)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue, lineWidth: 2))
                             }
 
                             Button(action: {
                                 isShowingDownloadModal = true
                             }) {
-                                HStack {
-                                    Image(systemName: "arrow.down.circle")
-                                    Text("Download")
-                                        .fontWeight(.bold)
-                                }
-                                .padding(10)
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.white)
-                                .background(Color.orange)
-                                .cornerRadius(10)
+                                Label("Download", systemImage: "arrow.down.circle")
+                                    .fontWeight(.bold)
+                                    .padding(10)
+                                    .frame(maxWidth: .infinity)
+                                    .foregroundColor(.white)
+                                    .background(Color.black)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange, lineWidth: 2))
                             }
                         }
 
                         Button(action: {
                             isShowingChallengeModal = true
                         }) {
-                            HStack {
-                                Image(systemName: "flag.checkered")
-                                Text("Challenge")
-                                    .fontWeight(.bold)
-                            }
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.white)
-                            .background(Color.purple)
-                            .cornerRadius(10)
+                            Label("Challenge", systemImage: "flag.checkered")
+                                .fontWeight(.bold)
+                                .padding(10)
+                                .frame(maxWidth: .infinity)
+                                .foregroundColor(.white)
+                                .background(Color.black)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.purple, lineWidth: 2))
                         }
                     }
                     .padding(.horizontal)

@@ -16,159 +16,190 @@ struct TrainingEditorView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
 
-    @FocusState private var isNameFocused: Bool
-
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack(alignment: .bottom) {
+            Color.black.ignoresSafeArea()
 
-                Form {
-                    Section(header: Text("Training Info").foregroundColor(.white)) {
-                        ZStack(alignment: .leading) {
-                            if name.isEmpty {
-                                Text("Training Name")
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(initialTraining == nil ? "New Training" : "Edit Training")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.white)
+                            //.padding(.horizontal)
+                            .padding(.top, 10)
+
+                        Divider().background(Color.gray.opacity(0.3))
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Training Info")
+                                .foregroundColor(.white)
+                                .font(.headline)
+
+                            TextField("Training Name", text: $name)
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .foregroundColor(.white)
+                                .font(.system(.body, design: .default).bold().italic())
+                                .cornerRadius(8)
+
+                            HStack {
+                                Text("Public Training")
                                     .foregroundColor(.gray)
-                                    .italic()
-                                    .bold()
+                                Spacer()
+                                Toggle("", isOn: $isPublic)
                             }
-                            TextField("", text: $name)
-                                .foregroundColor(.black)
-                                .italic()
-                                .bold()
-                                .focused($isNameFocused)
-                        }
 
-                        Toggle("Public Training", isOn: $isPublic)
-                            .foregroundColor(.black)
-
-                        Picker("Classification", selection: $classification) {
-                            ForEach(TrainingClassification.allCases, id: \.self) { level in
-                                Text(level.rawValue.capitalized)
-                                    .foregroundColor(.white)
-                            }
-                        }
-                    }
-
-                    Section(header: Text("Rounds").foregroundColor(.white)) {
-                        ForEach(rounds.indices, id: \.self) { index in
-                            VStack(alignment: .leading) {
-                                Picker("Exercise", selection: $rounds[index].name) {
-                                    ForEach(predefinedExercises, id: \.self) { exercise in
-                                        Text(exercise).foregroundColor(.black)
+                            HStack {
+                                Text("Classification")
+                                    .foregroundColor(.gray)
+                                Spacer()
+                                Picker("Classification", selection: $classification) {
+                                    ForEach(TrainingClassification.allCases, id: \.self) { level in
+                                        Text(level.rawValue.capitalized)
                                     }
                                 }
+                                .pickerStyle(MenuPickerStyle())
+                                .padding(8)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                                .foregroundColor(.blue)
+                            }
+                        }
 
-                                HStack {
-                                    Text("Force Goal (N)").foregroundColor(.black)
-                                    Spacer()
-                                    TextField("Goal", value: $rounds[index].goalForce, formatter: NumberFormatter())
-                                        .keyboardType(.numberPad)
-                                        .multilineTextAlignment(.trailing)
-                                        .frame(width: 100)
-                                        .foregroundColor(.gray)
-                                }
+                        Divider().background(Color.gray.opacity(0.3))
 
-                                HStack {
-                                    Text("Cutoff Time (sec)").foregroundColor(.black)
-                                    Spacer()
-                                    TextField("Optional", value: Binding(
-                                        get: { rounds[index].cutoffTime ?? 0 },
-                                        set: { rounds[index].cutoffTime = $0 == 0 ? nil : $0 }
-                                    ), formatter: NumberFormatter())
-                                        .keyboardType(.numberPad)
-                                        .multilineTextAlignment(.trailing)
-                                        .frame(width: 100)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Rounds")
+                                .foregroundColor(.white)
+                                .font(.headline)
+
+                            ForEach(rounds.indices, id: \.self) { index in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Round \(index + 1)")
                                         .foregroundColor(.gray)
+
+                                    HStack {
+                                        Text("Exercise")
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        Picker("Exercise", selection: $rounds[index].name) {
+                                            ForEach(predefinedExercises, id: \.self) { exercise in
+                                                Text(exercise)
+                                            }
+                                        }
+                                        .pickerStyle(MenuPickerStyle())
+                                        .padding(8)
+                                        .background(Color.gray.opacity(0.2))
+                                        .cornerRadius(8)
+                                        .foregroundColor(.blue)
+                                    }
+
+                                    HStack {
+                                        Text("Force Goal (N)")
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        TextField("", value: $rounds[index].goalForce, formatter: NumberFormatter())
+                                            .keyboardType(.numberPad)
+                                            .padding(8)
+                                            .frame(width: 100)
+                                            .background(Color.gray.opacity(0.2))
+                                            .foregroundColor(.white)
+                                            .cornerRadius(8)
+                                    }
+
+                                    HStack {
+                                        Text("Cutoff Time (sec)")
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        TextField("Optional", value: Binding(
+                                            get: { rounds[index].cutoffTime ?? 0 },
+                                            set: { rounds[index].cutoffTime = $0 == 0 ? nil : $0 }
+                                        ), formatter: NumberFormatter())
+                                            .keyboardType(.numberPad)
+                                            .padding(8)
+                                            .frame(width: 100)
+                                            .background(Color.gray.opacity(0.2))
+                                            .foregroundColor(.white)
+                                            .cornerRadius(8)
+                                    }
+
+                                    Divider().background(Color.gray.opacity(0.3))
                                 }
                             }
-                            .padding(.vertical, 4)
+
+                            Button(action: {
+                                rounds.append(TrainingRound(name: predefinedExercises.first ?? "New Round", goalForce: 1000))
+                            }) {
+                                Label("Add Round", systemImage: "plus.circle")
+                                    .foregroundColor(.gray)
+                            }
                         }
 
-                        Button(action: {
-                            rounds.append(TrainingRound(name: predefinedExercises.first ?? "New Round", goalForce: 1000))
-                        }) {
-                            Label("Add Round", systemImage: "plus.circle")
-                                .foregroundColor(.gray)
-                        }
-                    }
-
-                    if nickname == "Unknown" {
-                        Section {
+                        if nickname == "Unknown" {
                             Text("⚠️ Please complete your profile in Settings before saving a training.")
                                 .foregroundColor(.orange)
                                 .font(.caption)
                         }
                     }
+                    .padding()
                 }
-                .scrollContentBackground(.hidden)
-                .background(Color.black)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text(initialTraining == nil ? "New Training" : "Edit Training")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
+
+                // Save button pinned at the bottom
+                Button(action: saveTraining) {
+                    Text("Save")
+                        .font(.footnote.bold())
                         .foregroundColor(.white)
-                    }
-
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(action: {
-                            let newTraining = SavedTraining(
-                                id: initialTraining?.id ?? UUID(),
-                                name: name,
-                                rounds: rounds,
-                                creatorNickname: nickname,
-                                creationDate: initialTraining?.creationDate ?? Date(),
-                                isPublic: isPublic,
-                                classification: classification
-                            )
-
-                            print("🟢 Attempting to save with nickname: \(nickname)")
-
-                            if isPublic {
-                                checkAndSavePublicTraining(newTraining)
-                            } else {
-                                onSave(newTraining)
-                                dismiss()
-                            }
-                        }) {
-                            Text("Save")
-                                .foregroundColor(isSaveEnabled ? .green : .gray)
-                        }
-                        .disabled(!isSaveEnabled)
-                    }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(isSaveEnabled ? Color.green : Color.gray, lineWidth: 3)
+                        )
+                        .cornerRadius(10)
+                        .padding([.horizontal, .bottom])
                 }
-                .onAppear {
-                    if let training = initialTraining {
-                        self.name = training.name
-                        self.rounds = training.rounds
-                        self.isPublic = training.isPublic
-                        self.classification = training.classification
-                    }
-                    print("👤 Current nickname: \(nickname)")
-                }
-                .alert(isPresented: $showAlert) {
-                    Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-                }
+                .disabled(!isSaveEnabled)
             }
-            .background(
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        isNameFocused = false
-                    }
-            )
+        }
+        .onAppear {
+            if let training = initialTraining {
+                self.name = training.name
+                self.rounds = training.rounds
+                self.isPublic = training.isPublic
+                self.classification = training.classification
+            }
+        }
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
 
     private var isSaveEnabled: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && !rounds.isEmpty && nickname != "Unknown"
+    }
+
+    private func saveTraining() {
+        let newTraining = SavedTraining(
+            id: initialTraining?.id ?? UUID(),
+            name: name,
+            rounds: rounds,
+            creatorNickname: nickname,
+            creationDate: initialTraining?.creationDate ?? Date(),
+            isPublic: isPublic,
+            classification: classification
+        )
+
+        if isPublic {
+            checkAndSavePublicTraining(newTraining)
+        } else {
+            onSave(newTraining)
+            dismiss()
+        }
     }
 
     private func checkAndSavePublicTraining(_ training: SavedTraining) {

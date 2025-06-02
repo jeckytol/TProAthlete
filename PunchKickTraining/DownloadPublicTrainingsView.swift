@@ -17,7 +17,20 @@ struct DownloadPublicTrainingsView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                VStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Public Trainings")
+                        //.font(.title2)
+                        .fontWeight(.medium)
+                        .font(.largeTitle.bold())
+                        //.bold()
+                        .foregroundColor(.white)
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+
+                    Divider()
+                        .background(Color.gray)
+                        .padding(.bottom, 8)
+
                     if loading {
                         ProgressView("Loading...")
                             .padding()
@@ -31,63 +44,52 @@ struct DownloadPublicTrainingsView: View {
                             .foregroundColor(.gray)
                             .padding()
                     } else {
-                        List {
-                            ForEach(publicTrainings) { training in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text(training.name)
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Text(training.classification.rawValue.capitalized)
-                                            .font(.caption)
-                                            .foregroundColor(.blue)
-                                    }
-                                    Text("Created by \(training.creatorNickname)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-
-                                    Text("Created on \(training.creationDate.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-
-                                    Text("Rounds: \(training.rounds.count)")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-
-                                    Button(action: {
-                                        downloadTraining(training)
-                                    }) {
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                ForEach(publicTrainings) { training in
+                                    VStack(alignment: .leading, spacing: 6) {
                                         HStack {
-                                            Image(systemName: "arrow.down.circle.fill")
-                                            Text("Download")
+                                            Text(training.name)
+                                                .font(.headline)
+                                                .foregroundColor(.white)
+                                            Spacer()
+                                            Text(training.classification.rawValue.capitalized)
+                                                .font(.caption)
+                                                .foregroundColor(.blue)
                                         }
+                                        Text("Created by \(training.creatorNickname)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+
+                                        Text("Created on \(training.creationDate.formatted(date: .abbreviated, time: .shortened))")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+
+                                        Text("Rounds: \(training.rounds.count)")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+
+                                        Button(action: {
+                                            downloadTraining(training)
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "arrow.down.circle.fill")
+                                                Text("Download")
+                                            }
+                                        }
+                                        .padding(.top, 6)
+                                        .foregroundColor(.green)
                                     }
-                                    .padding(.top, 6)
-                                    .foregroundColor(.green)
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 10)
+
+                                    Divider()
+                                        .background(Color.gray.opacity(0.6))
+                                        .padding(.horizontal)
                                 }
-                                .padding(.vertical, 6)
-                                .listRowBackground(Color.black)
                             }
                         }
-                        .scrollContentBackground(.hidden)
-                        .background(Color.black)
                     }
-
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.gray.opacity(0.3))
-                    .cornerRadius(8)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Public Trainings")
-                        .font(.headline)
-                        .foregroundColor(.white)
                 }
             }
             .onAppear(perform: fetchPublicTrainings)
@@ -100,6 +102,10 @@ struct DownloadPublicTrainingsView: View {
 
         let db = Firestore.firestore()
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+
+        let downloadedTrainings = Set(SavedTraining.loadAll().map {
+            DownloadedTrainingKey(name: $0.name, creator: $0.creatorNickname, roundCount: $0.rounds.count, creationDate: $0.creationDate)
+        })
 
         db.collection("public_trainings")
             .whereField("creationDate", isGreaterThan: Timestamp(date: cutoffDate))
@@ -135,6 +141,8 @@ struct DownloadPublicTrainingsView: View {
                         return nil
                     }
 
+                    let creationDate = timestamp.dateValue()
+
                     let rounds: [TrainingRound] = roundsData.compactMap { roundDict in
                         guard
                             let name = roundDict["name"] as? String,
@@ -146,12 +154,17 @@ struct DownloadPublicTrainingsView: View {
                         return TrainingRound(name: name, goalForce: goalForce, cutoffTime: cutoff)
                     }
 
+                    let key = DownloadedTrainingKey(name: name, creator: creator, roundCount: rounds.count, creationDate: creationDate)
+                    if downloadedTrainings.contains(key) {
+                        return nil
+                    }
+
                     return SavedTraining(
                         id: UUID(),
                         name: name,
                         rounds: rounds,
                         creatorNickname: creator,
-                        creationDate: timestamp.dateValue(),
+                        creationDate: creationDate,
                         isPublic: isPublic,
                         classification: classification,
                         isDownloadedFromPublic: true
@@ -174,4 +187,12 @@ struct DownloadPublicTrainingsView: View {
         onDownload(training)
         dismiss()
     }
+}
+
+// MARK: - Helper struct for comparison
+struct DownloadedTrainingKey: Hashable {
+    let name: String
+    let creator: String
+    let roundCount: Int
+    let creationDate: Date
 }
