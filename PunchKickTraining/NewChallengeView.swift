@@ -1,7 +1,10 @@
 import SwiftUI
+import Firebase
 
 struct NewChallengeView: View {
     @Environment(\.dismiss) var dismiss
+    @AppStorage("nickname") private var nickname: String = ""
+
     @State private var challengeName: String = ""
     @State private var challengeDate = Date()
     @State private var difficulty: Int = 0
@@ -87,9 +90,7 @@ struct NewChallengeView: View {
                 }
 
                 // Save Button at Bottom
-                Button(action: {
-                    dismiss()
-                }) {
+                Button(action: saveChallenge) {
                     Text("Save Challenge")
                         .bold()
                         .foregroundColor(.white)
@@ -110,4 +111,42 @@ struct NewChallengeView: View {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
+
+    
+    //-----
+    
+    
+    private func saveChallenge() {
+        let db = Firestore.firestore()
+        let challengeID = UUID().uuidString
+
+        let newChallenge = Challenge(
+            id: challengeID,
+            trainingName: challengeName,
+            startTime: challengeDate,
+            difficulty: difficulty,
+            comment: comment,
+            creatorNickname: nickname,
+            registeredNicknames: []
+        )
+
+        let challengeData: [String: Any] = [
+            "trainingName": newChallenge.trainingName,
+            "startTime": Timestamp(date: newChallenge.startTime),
+            "difficulty": newChallenge.difficulty,
+            "comment": newChallenge.comment,
+            "creatorNickname": newChallenge.creatorNickname,
+            "registeredNicknames": []
+        ]
+
+        db.collection("challenges").document(challengeID).setData(challengeData) { error in
+            if let error = error {
+                print("❌ Error saving challenge: \(error)")
+            } else {
+                dismiss()
+            }
+        }
+    }
+    
+    //-----
 }
