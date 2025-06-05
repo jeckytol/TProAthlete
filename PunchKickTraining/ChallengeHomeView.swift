@@ -1,12 +1,19 @@
 import SwiftUI
 import Firebase
 
+struct IdentifiableString: Identifiable {
+    let id = UUID()
+    let value: String
+}
+
 struct ChallengeHomeView: View {
     @State private var challenges: [Challenge] = []
     @State private var isLoading = true
     @State private var isPresentingNewChallenge = false
     @State private var showConfirmation = false
     @State private var confirmationMessage = ""
+    @State private var showingParticipants: [String] = []
+    @State private var showingComment: IdentifiableString?
     @AppStorage("nickname") private var nickname: String = ""
 
     var body: some View {
@@ -15,113 +22,19 @@ struct ChallengeHomeView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 0) {
-                    // Header Title
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Challenges")
-                            .font(.title.bold())
-                            .foregroundColor(.white)
-                            .padding(.horizontal)
-                        Divider().background(Color.gray)
-                    }
-                    .padding(.top)
+                    headerView
 
                     if isLoading {
-                        Spacer()
-                        ProgressView("Loading Challenges...")
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .foregroundColor(.white)
-                        Spacer()
+                        loadingView
                     } else if challenges.isEmpty {
-                        Spacer()
-                        Text("No upcoming challenges.")
-                            .foregroundColor(.gray)
-                            .padding()
-                        Spacer()
+                        emptyStateView
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(challenges) { challenge in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        // Challenge Name (colored by registration)
-                                        Text(challenge.challengeName)
-                                            .font(.headline.bold())
-                                            .foregroundColor(isRegistered(for: challenge) ? .green : .gray)
-
-                                        // Creator and Difficulty
-                                        HStack {
-                                            Text("By: \(challenge.creatorNickname)")
-                                                .foregroundColor(.gray)
-                                            Spacer()
-                                            Text(difficultyStars(for: challenge.difficulty))
-                                                .foregroundColor(.white)
-                                        }
-
-                                        // Training Name
-                                        Text("Training: \(challenge.trainingName)")
-                                            .font(.subheadline)
-                                            .foregroundColor(.white)
-
-                                        // Truncated Comment
-                                        if !challenge.comment.isEmpty {
-                                            Text(truncatedComment(challenge.comment))
-                                                .foregroundColor(.white)
-                                                .font(.body)
-                                                .italic()
-                                        }
-
-                                        // Date & Action Buttons
-                                        HStack {
-                                            Button(action: {
-                                                toggleRegistration(for: challenge)
-                                            }) {
-                                                Text(isRegistered(for: challenge) ? "Unregister" : "Register")
-                                                    .font(.caption)
-                                                    .padding(6)
-                                                    .foregroundColor(.white)
-                                                    .background(Color.gray.opacity(0.3))
-                                                    .cornerRadius(6)
-                                            }
-
-                                            Spacer()
-
-                                            if challenge.creatorNickname == nickname {
-                                                Button(action: {
-                                                    deleteChallenge(challenge)
-                                                }) {
-                                                    Image(systemName: "trash")
-                                                        .foregroundColor(.gray)
-                                                }
-                                            }
-                                        }
-
-                                        // Time Display
-                                        Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
-                                            .font(.footnote)
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding()
-                                    .background(Color.gray.opacity(0.2))
-                                    .cornerRadius(10)
-                                }
-                            }
-                            .padding()
-                        }
+                        challengesList
                     }
                 }
 
-                // Confirmation Message Overlay
                 if showConfirmation {
-                    VStack {
-                        Spacer()
-                        Text(confirmationMessage)
-                            .foregroundColor(.green)
-                            .padding()
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(8)
-                            .transition(.opacity)
-                        Spacer().frame(height: 40)
-                    }
-                    .animation(.easeInOut, value: showConfirmation)
+                    confirmationOverlay
                 }
             }
             .toolbar {
@@ -137,11 +50,168 @@ struct ChallengeHomeView: View {
             .sheet(isPresented: $isPresentingNewChallenge, onDismiss: fetchChallenges) {
                 NewChallengeView()
             }
-            .onAppear {
-                fetchChallenges()
+            .onAppear(perform: fetchChallenges)
+            .alert(item: $showingComment) { comment in
+                Alert(title: Text("Full Comment"), message: Text(comment.value), dismissButton: .default(Text("OK")))
+            }
+            .sheet(isPresented: Binding<Bool>(
+                get: { !showingParticipants.isEmpty },
+                set: { newValue in if !newValue { showingParticipants = [] } }
+            )) {
+                NavigationView {
+                    List {
+                        ForEach(showingParticipants, id: \.self) { name in
+                            Text(name)
+                        }
+                    }
+                    .navigationTitle("Participants")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") {
+                                showingParticipants = []
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+
+    // MARK: - Subviews
+
+    private var headerView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Challenges")
+                .font(.title.bold())
+                .foregroundColor(.white)
+                .padding(.horizontal)
+            Divider().background(Color.gray)
+        }
+        .padding(.top)
+    }
+
+    private var loadingView: some View {
+        VStack {
+            Spacer()
+            ProgressView("Loading Challenges...")
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .foregroundColor(.white)
+            Spacer()
+        }
+    }
+
+    private var emptyStateView: some View {
+        VStack {
+            Spacer()
+            Text("No upcoming challenges.")
+                .foregroundColor(.gray)
+                .padding()
+            Spacer()
+        }
+    }
+
+    private var challengesList: some View {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(challenges) { challenge in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(challenge.challengeName)
+                            .font(.headline.bold())
+                            .foregroundColor(isRegistered(for: challenge) ? .green : .gray)
+
+                        HStack {
+                            Text("By: \(challenge.creatorNickname)")
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Text(difficultyStars(for: challenge.difficulty))
+                                .foregroundColor(.white)
+                        }
+
+                        Text("Training: \(challenge.trainingName)")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+
+                        if !challenge.comment.isEmpty {
+                            Text(truncatedComment(challenge.comment))
+                                .foregroundColor(.white)
+                                .font(.body)
+                                .italic()
+                                .padding(6)
+                                .background(Color.gray.opacity(0.25))
+                                .cornerRadius(6)
+                                .onTapGesture {
+                                    showingComment = IdentifiableString(value: challenge.comment)
+                                }
+                        }
+
+                        HStack {
+                            Button(action: {
+                                toggleRegistration(for: challenge)
+                            }) {
+                                Text(isRegistered(for: challenge) ? "Unregister" : "Register")
+                                    .font(.caption)
+                                    .padding(6)
+                                    .foregroundColor(.white)
+                                    .background(Color.gray.opacity(0.3))
+                                    .cornerRadius(6)
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                showingParticipants = challenge.registeredNicknames
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "person.2.fill")
+                                        .foregroundColor(.gray)
+                                    Text("\(challenge.registeredNicknames.count)")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+
+                        HStack {
+                            Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
+                                .font(.footnote)
+                                .foregroundColor(.gray)
+
+                            Spacer()
+
+                            if challenge.creatorNickname == nickname {
+                                Button(action: {
+                                    deleteChallenge(challenge)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
+                }
+            }
+            .padding()
+        }
+    }
+
+    private var confirmationOverlay: some View {
+        VStack {
+            Spacer()
+            Text(confirmationMessage)
+                .foregroundColor(.green)
+                .padding()
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(8)
+                .transition(.opacity)
+            Spacer().frame(height: 40)
+        }
+        .animation(.easeInOut, value: showConfirmation)
+    }
+
+    // MARK: - Utility Functions
 
     private func fetchChallenges() {
         isLoading = true
@@ -149,17 +219,12 @@ struct ChallengeHomeView: View {
         let now = Date()
         let cutoff = Calendar.current.date(byAdding: .day, value: 3, to: now)!
 
-        print("🔍 Filtering challenges from \(now) to \(cutoff)")
-
         db.collection("challenges")
             .order(by: "startTime")
             .getDocuments { snapshot, error in
                 isLoading = false
 
-                guard let documents = snapshot?.documents else {
-                    print("❌ No snapshot found or error: \(error?.localizedDescription ?? "Unknown error")")
-                    return
-                }
+                guard let documents = snapshot?.documents else { return }
 
                 self.challenges = documents.compactMap { doc -> Challenge? in
                     let data = doc.data()
@@ -172,7 +237,6 @@ struct ChallengeHomeView: View {
                         let creator = data["creatorNickname"] as? String,
                         let registered = data["registeredNicknames"] as? [String]
                     else {
-                        print("⚠️ Skipped document with missing fields: \(doc.documentID)")
                         return nil
                     }
 
