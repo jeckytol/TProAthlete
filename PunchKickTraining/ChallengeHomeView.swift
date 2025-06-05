@@ -42,16 +42,12 @@ struct ChallengeHomeView: View {
                             LazyVStack(spacing: 16) {
                                 ForEach(challenges) { challenge in
                                     VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Text(challenge.trainingName)
-                                                .font(.headline)
-                                                .foregroundColor(.white)
-                                            Spacer()
-                                            Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                        }
+                                        // Challenge Name (colored by registration)
+                                        Text(challenge.challengeName)
+                                            .font(.headline.bold())
+                                            .foregroundColor(isRegistered(for: challenge) ? .green : .gray)
 
+                                        // Creator and Difficulty
                                         HStack {
                                             Text("By: \(challenge.creatorNickname)")
                                                 .foregroundColor(.gray)
@@ -60,13 +56,20 @@ struct ChallengeHomeView: View {
                                                 .foregroundColor(.white)
                                         }
 
+                                        // Training Name
+                                        Text("Training: \(challenge.trainingName)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.white)
+
+                                        // Truncated Comment
                                         if !challenge.comment.isEmpty {
-                                            Text(challenge.comment)
+                                            Text(truncatedComment(challenge.comment))
                                                 .foregroundColor(.white)
                                                 .font(.body)
                                                 .italic()
                                         }
 
+                                        // Date & Action Buttons
                                         HStack {
                                             Button(action: {
                                                 toggleRegistration(for: challenge)
@@ -90,6 +93,11 @@ struct ChallengeHomeView: View {
                                                 }
                                             }
                                         }
+
+                                        // Time Display
+                                        Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
                                     }
                                     .padding()
                                     .background(Color.gray.opacity(0.2))
@@ -101,6 +109,7 @@ struct ChallengeHomeView: View {
                     }
                 }
 
+                // Confirmation Message Overlay
                 if showConfirmation {
                     VStack {
                         Spacer()
@@ -140,7 +149,7 @@ struct ChallengeHomeView: View {
         let now = Date()
         let cutoff = Calendar.current.date(byAdding: .day, value: 3, to: now)!
 
-        print("\u{1F50D} Filtering challenges from \(now) to \(cutoff)")
+        print("🔍 Filtering challenges from \(now) to \(cutoff)")
 
         db.collection("challenges")
             .order(by: "startTime")
@@ -155,6 +164,7 @@ struct ChallengeHomeView: View {
                 self.challenges = documents.compactMap { doc -> Challenge? in
                     let data = doc.data()
                     guard
+                        let challengeName = data["challengeName"] as? String,
                         let trainingName = data["trainingName"] as? String,
                         let timestamp = data["startTime"] as? Timestamp,
                         let difficulty = data["difficulty"] as? Int,
@@ -167,19 +177,11 @@ struct ChallengeHomeView: View {
                     }
 
                     let startTime = timestamp.dateValue()
-                    print("\u{1F552} Challenge '\(trainingName)' scheduled for \(startTime)")
+                    if startTime < now || startTime > cutoff { return nil }
 
-                    if startTime < now {
-                        print("⏳ Skipping '\(trainingName)' — already started.")
-                        return nil
-                    } else if startTime > cutoff {
-                        print("📅 Skipping '\(trainingName)' — beyond 3-day window.")
-                        return nil
-                    }
-
-                    print("✅ Including '\(trainingName)'")
                     return Challenge(
                         id: doc.documentID,
+                        challengeName: challengeName,
                         trainingName: trainingName,
                         startTime: startTime,
                         difficulty: difficulty,
@@ -188,13 +190,16 @@ struct ChallengeHomeView: View {
                         registeredNicknames: registered
                     )
                 }
-
-                print("📦 Total challenges included: \(self.challenges.count)")
             }
     }
 
     private func difficultyStars(for level: Int) -> String {
         String(repeating: "★", count: level)
+    }
+
+    private func truncatedComment(_ text: String) -> String {
+        let words = text.split(separator: " ")
+        return words.count <= 6 ? text : words.prefix(6).joined(separator: " ") + "..."
     }
 
     private func isRegistered(for challenge: Challenge) -> Bool {

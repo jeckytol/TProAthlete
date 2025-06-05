@@ -9,6 +9,7 @@ import Foundation
 
 struct Challenge: Identifiable, Codable, Equatable {
     let id: String
+    let challengeName: String
     let trainingName: String
     let startTime: Date
     let difficulty: Int

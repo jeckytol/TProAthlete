@@ -10,8 +10,11 @@ struct NewChallengeView: View {
     @State private var difficulty: Int = 0
     @State private var comment: String = ""
 
+    @State private var publicTrainings: [SavedTraining] = []
+    @State private var selectedTraining: SavedTraining?
+
     var isSaveEnabled: Bool {
-        !challengeName.isEmpty
+        !challengeName.isEmpty && selectedTraining != nil
     }
 
     var body: some View {
@@ -40,6 +43,38 @@ struct NewChallengeView: View {
                             .italic()
                             .bold()
                             .cornerRadius(8)
+
+                        // Training Picker
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Select Public Training")
+                                .foregroundColor(.white)
+                                .font(.headline)
+
+                            Menu {
+                                ForEach(publicTrainings, id: \.id) { training in
+                                    Button(action: {
+                                        selectedTraining = training
+                                    }) {
+                                        VStack(alignment: .leading) {
+                                            Text(training.name).bold()
+                                            Text("By \(training.creatorNickname) • \(training.rounds.count) rounds • Total Goal: \(totalForce(of: training))")
+                                                .font(.caption)
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(selectedTraining?.name ?? "< Select a public training >")
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                            }
+                        }
 
                         // Challenge Date
                         DatePicker("Challenge Date & Time", selection: $challengeDate)
@@ -110,19 +145,62 @@ struct NewChallengeView: View {
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
+        .onAppear(perform: fetchPublicTrainings)
     }
 
-    
-    //-----
-    
-    
+    private func totalForce(of training: SavedTraining) -> Int {
+        training.rounds.reduce(0) { $0 + Int($1.goalForce) }
+    }
+
+    private func fetchPublicTrainings() {
+        let db = Firestore.firestore()
+        db.collection("public_trainings")
+            .getDocuments { snapshot, error in
+                if let documents = snapshot?.documents {
+                    self.publicTrainings = documents.compactMap { doc in
+                        let data = doc.data()
+                        guard
+                            let name = data["name"] as? String,
+                            let creator = data["creatorNickname"] as? String,
+                            let timestamp = data["creationDate"] as? Timestamp,
+                            let classificationStr = data["classification"] as? String,
+                            let classification = TrainingClassification(rawValue: classificationStr),
+                            let roundsData = data["rounds"] as? [[String: Any]]
+                        else {
+                            return nil
+                        }
+
+                        let rounds: [TrainingRound] = roundsData.compactMap { dict in
+                            guard let name = dict["name"] as? String, let goal = dict["goalForce"] as? Double else { return nil }
+                            let cutoff = (dict["cutoffTime"] as? Double).map { Int($0) }
+                            return TrainingRound(name: name, goalForce: goal, cutoffTime: cutoff)
+                        }
+
+                        return SavedTraining(
+                            id: UUID(),
+                            name: name,
+                            rounds: rounds,
+                            creatorNickname: creator,
+                            creationDate: timestamp.dateValue(),
+                            isPublic: true,
+                            classification: classification,
+                            isDownloadedFromPublic: false
+                        )
+                    }
+                }
+            }
+    }
+
     private func saveChallenge() {
+        guard let selected = selectedTraining else { return }
+
         let db = Firestore.firestore()
         let challengeID = UUID().uuidString
 
         let newChallenge = Challenge(
             id: challengeID,
-            trainingName: challengeName,
+            challengeName: challengeName,
+            trainingName: selected.name,
             startTime: challengeDate,
             difficulty: difficulty,
             comment: comment,
@@ -131,6 +209,7 @@ struct NewChallengeView: View {
         )
 
         let challengeData: [String: Any] = [
+            "challengeName": newChallenge.challengeName,
             "trainingName": newChallenge.trainingName,
             "startTime": Timestamp(date: newChallenge.startTime),
             "difficulty": newChallenge.difficulty,
@@ -147,6 +226,4 @@ struct NewChallengeView: View {
             }
         }
     }
-    
-    //-----
 }
