@@ -5,8 +5,10 @@ struct ChallengeHomeView: View {
     @State private var challenges: [Challenge] = []
     @State private var isLoading = true
     @State private var isPresentingNewChallenge = false
+    @State private var showConfirmation = false
+    @State private var confirmationMessage = ""
     @AppStorage("nickname") private var nickname: String = ""
-    
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -45,7 +47,7 @@ struct ChallengeHomeView: View {
                                                 .font(.headline)
                                                 .foregroundColor(.white)
                                             Spacer()
-                                            Text(challenge.startTime, style: .date)
+                                            Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
                                                 .font(.subheadline)
                                                 .foregroundColor(.gray)
                                         }
@@ -98,6 +100,20 @@ struct ChallengeHomeView: View {
                         }
                     }
                 }
+
+                if showConfirmation {
+                    VStack {
+                        Spacer()
+                        Text(confirmationMessage)
+                            .foregroundColor(.green)
+                            .padding()
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(8)
+                            .transition(.opacity)
+                        Spacer().frame(height: 40)
+                    }
+                    .animation(.easeInOut, value: showConfirmation)
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -124,7 +140,7 @@ struct ChallengeHomeView: View {
         let now = Date()
         let cutoff = Calendar.current.date(byAdding: .day, value: 3, to: now)!
 
-        print("🔍 Filtering challenges from \(now) to \(cutoff)")
+        print("\u{1F50D} Filtering challenges from \(now) to \(cutoff)")
 
         db.collection("challenges")
             .order(by: "startTime")
@@ -151,7 +167,7 @@ struct ChallengeHomeView: View {
                     }
 
                     let startTime = timestamp.dateValue()
-                    print("🕒 Challenge '\(trainingName)' scheduled for \(startTime)")
+                    print("\u{1F552} Challenge '\(trainingName)' scheduled for \(startTime)")
 
                     if startTime < now {
                         print("⏳ Skipping '\(trainingName)' — already started.")
@@ -192,14 +208,20 @@ struct ChallengeHomeView: View {
         var updated = challenge
         if isRegistered(for: challenge) {
             updated.registeredNicknames.removeAll { $0 == nickname }
+            confirmationMessage = "Unregistered successfully"
         } else {
             updated.registeredNicknames.append(nickname)
+            confirmationMessage = "Registered successfully"
         }
 
         docRef.updateData(["registeredNicknames": updated.registeredNicknames]) { error in
             if error == nil {
                 if let index = challenges.firstIndex(where: { $0.id == challenge.id }) {
                     challenges[index] = updated
+                    showConfirmation = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        showConfirmation = false
+                    }
                 }
             }
         }
