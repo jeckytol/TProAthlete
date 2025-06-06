@@ -172,9 +172,16 @@ struct ChallengeHomeView: View {
                         }
 
                         HStack {
-                            Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
-                                .font(.footnote)
-                                .foregroundColor(.gray)
+                            if canEnterWaitingRoom(for: challenge) {
+                                NavigationLink(destination: ChallengeWaitingRoomView(challenge: challenge)) {
+                                    Text("Enter Waiting Room")
+                                        .font(.caption)
+                                        .padding(6)
+                                        .foregroundColor(.white)
+                                        .background(Color.blue.opacity(0.7))
+                                        .cornerRadius(6)
+                                }
+                            }
 
                             Spacer()
 
@@ -187,6 +194,10 @@ struct ChallengeHomeView: View {
                                 }
                             }
                         }
+
+                        Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
+                            .font(.footnote)
+                            .foregroundColor(.gray)
                     }
                     .padding()
                     .background(Color.gray.opacity(0.2))
@@ -222,37 +233,45 @@ struct ChallengeHomeView: View {
         db.collection("challenges")
             .order(by: "startTime")
             .getDocuments { snapshot, error in
-                isLoading = false
+                DispatchQueue.main.async {
+                    isLoading = false
 
-                guard let documents = snapshot?.documents else { return }
-
-                self.challenges = documents.compactMap { doc -> Challenge? in
-                    let data = doc.data()
-                    guard
-                        let challengeName = data["challengeName"] as? String,
-                        let trainingName = data["trainingName"] as? String,
-                        let timestamp = data["startTime"] as? Timestamp,
-                        let difficulty = data["difficulty"] as? Int,
-                        let comment = data["comment"] as? String,
-                        let creator = data["creatorNickname"] as? String,
-                        let registered = data["registeredNicknames"] as? [String]
-                    else {
-                        return nil
+                    guard let documents = snapshot?.documents else {
+                        print("❌ No snapshot or error: \(error?.localizedDescription ?? "Unknown error")")
+                        self.challenges = []
+                        return
                     }
 
-                    let startTime = timestamp.dateValue()
-                    if startTime < now || startTime > cutoff { return nil }
+                    let loadedChallenges: [Challenge] = documents.compactMap { doc in
+                        let data = doc.data()
+                        guard
+                            let challengeName = data["challengeName"] as? String,
+                            let trainingName = data["trainingName"] as? String,
+                            let timestamp = data["startTime"] as? Timestamp,
+                            let difficulty = data["difficulty"] as? Int,
+                            let comment = data["comment"] as? String,
+                            let creator = data["creatorNickname"] as? String,
+                            let registered = data["registeredNicknames"] as? [String]
+                        else {
+                            return nil
+                        }
 
-                    return Challenge(
-                        id: doc.documentID,
-                        challengeName: challengeName,
-                        trainingName: trainingName,
-                        startTime: startTime,
-                        difficulty: difficulty,
-                        comment: comment,
-                        creatorNickname: creator,
-                        registeredNicknames: registered
-                    )
+                        let startTime = timestamp.dateValue()
+                        if startTime < now || startTime > cutoff { return nil }
+
+                        return Challenge(
+                            id: doc.documentID,
+                            challengeName: challengeName,
+                            trainingName: trainingName,
+                            startTime: startTime,
+                            difficulty: difficulty,
+                            comment: comment,
+                            creatorNickname: creator,
+                            registeredNicknames: registered
+                        )
+                    }
+
+                    self.challenges = loadedChallenges
                 }
             }
     }
@@ -303,5 +322,11 @@ struct ChallengeHomeView: View {
                 challenges.removeAll { $0.id == challenge.id }
             }
         }
+    }
+
+    private func canEnterWaitingRoom(for challenge: Challenge) -> Bool {
+        let now = Date()
+        let threshold = challenge.startTime.addingTimeInterval(-15 * 60) // 15 minutes before start
+        return now >= threshold && now <= challenge.startTime && isRegistered(for: challenge)
     }
 }
