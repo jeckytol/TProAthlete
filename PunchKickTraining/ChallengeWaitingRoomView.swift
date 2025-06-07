@@ -17,43 +17,54 @@ struct ChallengeWaitingRoomView: View {
             if isChallengeStarted {
                 ChallengeTrainingView(challenge: challenge)
             } else {
-                VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Title
                     Text("Waiting Room")
                         .font(.largeTitle.bold())
                         .foregroundColor(.white)
+                        .padding(.horizontal)
 
+                    Divider()
+                        .background(Color.gray)
+                        .padding(.horizontal)
+
+                    // Challenge name
                     Text("Challenge: \(challenge.challengeName)")
                         .foregroundColor(.gray)
                         .font(.headline)
+                        .padding(.horizontal)
 
+                    // Countdown
                     Text("Starts in: \(formattedTime(from: timeRemaining))")
                         .font(.title2)
                         .foregroundColor(.white)
                         .monospacedDigit()
+                        .padding(.horizontal)
 
-                    Divider().background(Color.gray)
-
-                    VStack(alignment: .leading) {
+                    // Participants Section
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Participants:")
                             .foregroundColor(.white)
                             .font(.headline)
 
                         ScrollView {
-                            LazyVStack(alignment: .leading, spacing: 4) {
+                            LazyVStack(alignment: .leading, spacing: 6) {
                                 ForEach(participants, id: \.self) { name in
                                     Text(name)
                                         .foregroundColor(.gray)
                                 }
                             }
+                            .padding()
                         }
                         .frame(maxHeight: 200)
-                        .padding(.horizontal)
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(8)
                     }
-                    .padding()
+                    .padding(.horizontal)
+
+                    Spacer()
                 }
-                .padding()
+                .padding(.top)
             }
         }
         .onAppear {

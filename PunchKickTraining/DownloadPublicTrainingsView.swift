@@ -17,34 +17,35 @@ struct DownloadPublicTrainingsView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Public Trainings")
-                        //.font(.title2)
-                        .fontWeight(.medium)
-                        .font(.largeTitle.bold())
-                        //.bold()
-                        .foregroundColor(.white)
-                        .padding(.horizontal)
-                        .padding(.top, 10)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Header
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Public Trainings")
+                                .font(.largeTitle.bold())
+                                .foregroundColor(.white)
+                                .padding(.top, 10)
+                                .padding(.horizontal)
 
-                    Divider()
-                        .background(Color.gray)
-                        .padding(.bottom, 8)
+                            Divider()
+                                .background(Color.gray)
+                                .padding(.horizontal)
+                        }
 
-                    if loading {
-                        ProgressView("Loading...")
-                            .padding()
-                            .foregroundColor(.white)
-                    } else if let errorMessage = errorMessage {
-                        Text("Error: \(errorMessage)")
-                            .foregroundColor(.red)
-                            .padding()
-                    } else if publicTrainings.isEmpty {
-                        Text("No public trainings available from other users in the last 7 days.")
-                            .foregroundColor(.gray)
-                            .padding()
-                    } else {
-                        ScrollView {
+                        // Content States
+                        if loading {
+                            ProgressView("Loading...")
+                                .padding()
+                                .foregroundColor(.white)
+                        } else if let errorMessage = errorMessage {
+                            Text("Error: \(errorMessage)")
+                                .foregroundColor(.red)
+                                .padding(.horizontal)
+                        } else if publicTrainings.isEmpty {
+                            Text("No public trainings available from other users in the last 7 days.")
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
+                        } else {
                             LazyVStack(alignment: .leading, spacing: 0) {
                                 ForEach(publicTrainings) { training in
                                     VStack(alignment: .leading, spacing: 6) {
@@ -57,6 +58,7 @@ struct DownloadPublicTrainingsView: View {
                                                 .font(.caption)
                                                 .foregroundColor(.blue)
                                         }
+
                                         Text("Created by \(training.creatorNickname)")
                                             .font(.subheadline)
                                             .foregroundColor(.gray)
@@ -89,7 +91,10 @@ struct DownloadPublicTrainingsView: View {
                                 }
                             }
                         }
+
+                        Spacer(minLength: 20)
                     }
+                    .padding(.top)
                 }
             }
             .onAppear(perform: fetchPublicTrainings)

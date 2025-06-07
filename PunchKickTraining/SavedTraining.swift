@@ -4,18 +4,15 @@ enum TrainingClassification: String, Codable, CaseIterable {
     case easy, medium, hard, superHard
 }
 
-struct SavedTraining: Identifiable, Codable {
+struct SavedTraining: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var name: String
     var rounds: [TrainingRound]
 
-    // 🔄 New Fields for sharing & classification
     var creatorNickname: String
     var creationDate: Date
     var isPublic: Bool = false
     var classification: TrainingClassification = .medium
-    
-    // ✅ NEW: Used to track whether a public training was explicitly downloaded
     var isDownloadedFromPublic: Bool = false
 
     static func loadAll() -> [SavedTraining] {
@@ -30,5 +27,10 @@ struct SavedTraining: Identifiable, Codable {
         if let encoded = try? JSONEncoder().encode(trainings) {
             UserDefaults.standard.set(encoded, forKey: "savedTrainings")
         }
+    }
+
+    // MARK: - Equatable Conformance
+    static func == (lhs: SavedTraining, rhs: SavedTraining) -> Bool {
+        return lhs.id == rhs.id
     }
 }
