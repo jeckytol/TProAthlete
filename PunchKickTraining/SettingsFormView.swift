@@ -14,6 +14,7 @@ struct SettingsFormView: View {
     @AppStorage("strikeAnnounceFrequency") var strikeAnnounceFrequency: Int = 10
     @AppStorage("sensorSource") var sensorSource: String = "Phone"
     @AppStorage("nickname") private var nickname: String = ""
+    @AppStorage("selectedAvatar") private var selectedAvatar: String = "avatar_bear"
 
     @State private var age: String = ""
     @State private var athleteType: String = "Beginner"
@@ -21,14 +22,39 @@ struct SettingsFormView: View {
     @State private var showingSaveMessage = false
 
     private let athleteTypes = ["Beginner", "Amateur", "Pro"]
+    private let avatarOptions = [
+        "avatar_bear", "avatar_shark", "avatar_lion",
+        "avatar_snake", "avatar_elephant", "avatar_monkey"
+    ]
 
     var body: some View {
         Form {
             // User Profile Section
             DisclosureGroup(isExpanded: $showProfileSection) {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
                     TextField("Nickname", text: $nickname)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                    // Avatar Picker
+                    Text("Choose Avatar:")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(avatarOptions, id: \.self) { avatar in
+                                Image(avatar)
+                                    .resizable()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(selectedAvatar == avatar ? Color.green : Color.clear, lineWidth: 2))
+                                    .onTapGesture {
+                                        selectedAvatar = avatar
+                                    }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
 
                     TextField("Age", text: $age)
                         .keyboardType(.numberPad)
@@ -39,10 +65,7 @@ struct SettingsFormView: View {
                             Text($0)
                         }
                     }
-                    .pickerStyle(MenuPickerStyle()) // Avoids collision when used inline
-
-                    Spacer().frame(height: 30)
-                    Divider()
+                    .pickerStyle(MenuPickerStyle())
 
                     Button("Save Profile") {
                         let profile = UserProfile(
@@ -51,7 +74,8 @@ struct SettingsFormView: View {
                             nickname: nickname,
                             age: Int(age) ?? 0,
                             athleteType: athleteType,
-                            createdAt: Date()
+                            createdAt: Date(),
+                            avatarName: selectedAvatar
                         )
                         profileManager.saveProfile(profile) { result in
                             if case .success = result {
@@ -121,6 +145,7 @@ struct SettingsFormView: View {
                 nickname = p.nickname
                 age = String(p.age)
                 athleteType = p.athleteType
+                selectedAvatar = p.avatarName ?? ""
             }
         }
         .onChange(of: profileManager.profile) { newProfile in
@@ -128,20 +153,9 @@ struct SettingsFormView: View {
                 nickname = p.nickname
                 age = String(p.age)
                 athleteType = p.athleteType
+                selectedAvatar = p.avatarName ?? ""
             }
         }
-    }
-
-    // MARK: - Reset All Settings
-    private func resetAllSettings() {
-        accelerationThreshold = 1.3
-        postStrikeCooldown = 0.3
-        minMotionDuration = 0.2
-        announceTime = true
-        timeAnnounceFrequency = 30
-        announceStrikes = true
-        strikeAnnounceFrequency = 10
-        sensorSource = "Phone"
     }
 
     // MARK: - Slider Helper
@@ -155,5 +169,17 @@ struct SettingsFormView: View {
             }
             Slider(value: value, in: range, step: 0.05)
         }
+    }
+
+    // MARK: - Reset Settings
+    private func resetAllSettings() {
+        accelerationThreshold = 1.3
+        postStrikeCooldown = 0.3
+        minMotionDuration = 0.2
+        announceTime = true
+        timeAnnounceFrequency = 30
+        announceStrikes = true
+        strikeAnnounceFrequency = 10
+        sensorSource = "Phone"
     }
 }

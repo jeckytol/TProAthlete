@@ -16,4 +16,5 @@ struct UserProfile: Codable, Identifiable, Equatable {
     var age: Int
     var athleteType: String
     var createdAt: Date
+    var avatarName: String?
 }

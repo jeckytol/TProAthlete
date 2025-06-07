@@ -7,44 +7,138 @@ struct UserProfileView: View {
     @State private var age: String = ""
     @State private var athleteType: String = "Pro"
     @State private var profileSaved = false
+    @State private var selectedAvatar: String = "avatar_bear" // Default avatar
 
     let athleteTypes = ["Pro", "Amateur", "Beginner"]
+    let avatarOptions = ["avatar_bear", "avatar_shark", "avatar_lion", "avatar_snake", "avatar_elephant", "avatar_monkey"]
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Profile Info")) {
-                    TextField("Nickname", text: $nickname)
-                    TextField("Age", text: $age)
-                        .keyboardType(.numberPad)
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                    Picker("Athlete Type", selection: $athleteType) {
-                        ForEach(athleteTypes, id: \.self) { type in
-                            Text(type)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("User Profile")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.white)
+                        .padding(.bottom, 10)
+
+                    Divider().background(Color.gray)
+
+                    // Nickname
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Nickname")
+                            .foregroundColor(.gray)
+                            .font(.headline)
+                        TextField("Enter nickname", text: $nickname)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+
+                    // Avatar Picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Choose Avatar")
+                            .foregroundColor(.gray)
+                            .font(.headline)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 16) {
+                                ForEach(avatarOptions, id: \.self) { avatar in
+                                    Image(avatar)
+                                        .resizable()
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(avatar == selectedAvatar ? Color.green : Color.clear, lineWidth: 3)
+                                        )
+                                        .onTapGesture {
+                                            selectedAvatar = avatar
+                                        }
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
-                }
 
-                Section {
-                    Button("Save Profile") {
-                        saveProfile()
+                    // Age
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Age")
+                            .foregroundColor(.gray)
+                            .font(.headline)
+                        TextField("Enter age", text: $age)
+                            .keyboardType(.numberPad)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+
+                    // Athlete Level
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Athlete Level")
+                            .foregroundColor(.gray)
+                            .font(.headline)
+
+                        Menu {
+                            ForEach(athleteTypes, id: \.self) { type in
+                                Button(action: {
+                                    athleteType = type
+                                }) {
+                                    Text(type)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(athleteType)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(8)
+                        }
+                    }
+
+                    // Save Button
+                    Button(action: saveProfile) {
+                        Text("Save Profile")
+                            .bold()
+                            .foregroundColor(.green)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.black)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(nickname.isEmpty || age.isEmpty ? Color.gray : Color.green, lineWidth: 1)
+                            )
+                            .cornerRadius(10)
                     }
                     .disabled(nickname.isEmpty || age.isEmpty)
-                }
 
-                if profileSaved {
-                    Text("Profile saved successfully!")
-                        .foregroundColor(.green)
-                        .font(.caption)
+                    // Save Confirmation
+                    if profileSaved {
+                        Text("Profile saved successfully!")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                            .padding(.top, 8)
+                    }
                 }
+                .padding()
             }
-            .navigationTitle("User Profile")
-            .onAppear {
-                loadProfileIfAvailable()
+            .onTapGesture {
+                hideKeyboard()
             }
-            .onChange(of: profileManager.profile) { _ in
-                loadProfileIfAvailable()
-            }
+        }
+        .onAppear {
+            loadProfileIfAvailable()
+        }
+        .onChange(of: profileManager.profile) { _ in
+            loadProfileIfAvailable()
         }
     }
 
@@ -55,7 +149,8 @@ struct UserProfileView: View {
             nickname: nickname,
             age: Int(age) ?? 0,
             athleteType: athleteType,
-            createdAt: Date()
+            createdAt: Date(),
+            avatarName: selectedAvatar  // ✅ Save the avatar
         )
 
         profileManager.saveProfile(profile) { result in
@@ -74,5 +169,10 @@ struct UserProfileView: View {
         nickname = existing.nickname
         age = "\(existing.age)"
         athleteType = existing.athleteType
+        selectedAvatar = existing.avatarName ?? "avatar_bear"
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
