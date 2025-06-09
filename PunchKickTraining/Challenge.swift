@@ -17,3 +17,12 @@ struct Challenge: Identifiable, Codable, Equatable {
     let creatorNickname: String
     var registeredNicknames: [String]
 }
+extension Challenge: Hashable {
+    static func == (lhs: Challenge, rhs: Challenge) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}

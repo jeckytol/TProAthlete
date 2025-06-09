@@ -6,6 +6,7 @@ struct NewChallengeView: View {
     @AppStorage("nickname") private var nickname: String = ""
 
     @Binding var editingChallenge: Challenge?
+    var onUpdate: (() -> Void)? = nil
 
     @State private var challengeName: String = ""
     @State private var challengeDate = Date()
@@ -37,11 +38,6 @@ struct NewChallengeView: View {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .onAppear(perform: initializeData)
-        .onChange(of: publicTrainings) { _ in
-            if let editing = editingChallenge {
-                self.selectedTraining = publicTrainings.first { $0.name == editing.trainingName }
-            }
-        }
     }
 
     // MARK: - Header
@@ -52,12 +48,13 @@ struct NewChallengeView: View {
                 .font(.title.bold())
                 .foregroundColor(.white)
                 .padding(.horizontal)
+
             Divider().background(Color.gray)
         }
         .padding(.top)
     }
 
-    // MARK: - Form Content
+    // MARK: - Form
 
     private var formContent: some View {
         VStack(spacing: 20) {
@@ -79,7 +76,6 @@ struct NewChallengeView: View {
                 .foregroundColor(.white)
 
             difficultyStars
-
             commentEditor
         }
     }
@@ -122,7 +118,9 @@ struct NewChallengeView: View {
             Text("Difficulty")
                 .foregroundColor(.white)
                 .font(.headline)
+
             Spacer()
+
             HStack {
                 ForEach(1...5, id: \.self) { index in
                     Image(systemName: index <= difficulty ? "star.fill" : "star")
@@ -187,41 +185,46 @@ struct NewChallengeView: View {
 
     private func fetchPublicTrainings() {
         let db = Firestore.firestore()
-        db.collection("public_trainings")
-            .getDocuments { snapshot, error in
-                if let documents = snapshot?.documents {
-                    self.publicTrainings = documents.compactMap { doc in
-                        let data = doc.data()
-                        guard
-                            let name = data["name"] as? String,
-                            let creator = data["creatorNickname"] as? String,
-                            let timestamp = data["creationDate"] as? Timestamp,
-                            let classificationStr = data["classification"] as? String,
-                            let classification = TrainingClassification(rawValue: classificationStr),
-                            let roundsData = data["rounds"] as? [[String: Any]]
-                        else {
-                            return nil
-                        }
+        db.collection("public_trainings").getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents else { return }
 
-                        let rounds = roundsData.compactMap { dict -> TrainingRound? in
-                            guard let name = dict["name"] as? String, let goal = dict["goalForce"] as? Double else { return nil }
-                            let cutoff = (dict["cutoffTime"] as? Double).map { Int($0) }
-                            return TrainingRound(name: name, goalForce: goal, cutoffTime: cutoff)
-                        }
-
-                        return SavedTraining(
-                            id: UUID(),
-                            name: name,
-                            rounds: rounds,
-                            creatorNickname: creator,
-                            creationDate: timestamp.dateValue(),
-                            isPublic: true,
-                            classification: classification,
-                            isDownloadedFromPublic: false
-                        )
-                    }
+            self.publicTrainings = documents.compactMap { doc in
+                let data = doc.data()
+                guard
+                    let name = data["name"] as? String,
+                    let creator = data["creatorNickname"] as? String,
+                    let timestamp = data["creationDate"] as? Timestamp,
+                    let classificationStr = data["classification"] as? String,
+                    let classification = TrainingClassification(rawValue: classificationStr),
+                    let roundsData = data["rounds"] as? [[String: Any]]
+                else {
+                    return nil
                 }
+
+                let rounds = roundsData.compactMap { dict -> TrainingRound? in
+                    guard let name = dict["name"] as? String,
+                          let goal = dict["goalForce"] as? Double else { return nil }
+                    let cutoff = (dict["cutoffTime"] as? Double).map { Int($0) }
+                    return TrainingRound(name: name, goalForce: goal, cutoffTime: cutoff)
+                }
+
+                return SavedTraining(
+                    id: UUID(),
+                    name: name,
+                    rounds: rounds,
+                    creatorNickname: creator,
+                    creationDate: timestamp.dateValue(),
+                    isPublic: true,
+                    classification: classification,
+                    isDownloadedFromPublic: false
+                )
             }
+
+            // Restore selected training if editing
+            if let editing = editingChallenge {
+                selectedTraining = publicTrainings.first { $0.name == editing.trainingName }
+            }
+        }
     }
 
     private func totalForce(of training: SavedTraining) -> Int {
@@ -259,6 +262,7 @@ struct NewChallengeView: View {
             if let error = error {
                 print("❌ Error saving challenge: \(error)")
             } else {
+                onUpdate?()  // 🔁 Refresh parent view
                 dismiss()
             }
         }
