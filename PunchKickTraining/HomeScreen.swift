@@ -22,6 +22,7 @@ enum NavigationIntent: Identifiable, Equatable {
 }
 
 struct HomeScreen: View {
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     @Binding var selectedTraining: SavedTraining?
     @State private var trainings: [SavedTraining] = []
     @State private var navigationIntent: NavigationIntent? = nil
@@ -183,6 +184,7 @@ struct HomeScreen: View {
             }
             .sheet(isPresented: $isShowingChallengeModal) {
                 ChallengeHomeView()
+                    .environmentObject(bluetoothManager)
             }
         }
     }

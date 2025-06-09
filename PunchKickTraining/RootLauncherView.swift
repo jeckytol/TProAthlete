@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RootLauncherView: View {
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var profileManager: UserProfileManager
     @Binding var selectedTraining: SavedTraining?
 
@@ -21,6 +22,7 @@ struct RootLauncherView: View {
                 ContentView(training: training, selectedTraining: $selectedTraining)
             } else {
                 HomeScreen(selectedTraining: $selectedTraining)
+                    .environmentObject(bluetoothManager)
             }
         }
         .onAppear {

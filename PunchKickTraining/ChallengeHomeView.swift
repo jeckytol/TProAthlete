@@ -7,6 +7,7 @@ struct IdentifiableString: Identifiable {
 }
 
 struct ChallengeHomeView: View {
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     @StateObject private var viewModel = ChallengeListViewModel()
 
     @State private var editingChallenge: Challenge? = nil
@@ -36,6 +37,7 @@ struct ChallengeHomeView: View {
             }
             .navigationDestination(item: $selectedChallenge) { challenge in
                 ChallengeWaitingRoomView(challenge: challenge)
+                    .environmentObject(bluetoothManager)
             }
             .sheet(item: $editingChallenge) { challenge in
                 NewChallengeView(editingChallenge: $editingChallenge) {

@@ -12,6 +12,11 @@ import UIKit
 
 class TrainingSessionManager: ObservableObject {
     
+    
+    @Published var observedRoundName: String = "–"
+    @Published var observedRoundGoal: Double = 0
+    @Published var observedRoundNumber: Int = 0
+    
     // MARK: - Audio
     private let synthesizer = AVSpeechSynthesizer()
     private var audioPlayer: AVAudioPlayer?
@@ -53,14 +58,18 @@ class TrainingSessionManager: ObservableObject {
 
     // MARK: - Public Methods
 
+  
+    
     func startNewSession(with rounds: [TrainingRound]) {
         self.rounds = rounds
         self.currentRoundIndex = 0
         self.sessionElapsedTime = 0
         self.sessionStartTime = nil
-       
+
+        updateObservedRoundInfo()
     }
 
+    
     func advanceToNextRound() {
         guard hasNextRound else {
             print("No more rounds.")
@@ -69,8 +78,15 @@ class TrainingSessionManager: ObservableObject {
 
         currentRoundIndex += 1
         let newRound = rounds[currentRoundIndex]
+        updateObservedRoundInfo()
         playBipSound()
         announceRoundName(newRound.name)
+    }
+    
+    private func updateObservedRoundInfo() {
+        observedRoundName = currentRound?.name ?? "–"
+        observedRoundGoal = currentRound?.goalForce ?? 0
+        observedRoundNumber = currentRoundIndex + 1
     }
 
     func reset() {

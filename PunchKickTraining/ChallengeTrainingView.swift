@@ -1,13 +1,12 @@
-// ChallengeTrainingView.swift (Corrected)
-
 import SwiftUI
 
 struct ChallengeTrainingView: View {
     let challenge: Challenge
-    
     let training: SavedTraining
 
+    //@ObservedObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var bluetoothManager: BluetoothManager
+    
     @EnvironmentObject var userProfileManager: UserProfileManager
     @Environment(\.dismiss) var dismiss
 
@@ -15,21 +14,27 @@ struct ChallengeTrainingView: View {
 
     @State private var isUserPanelExpanded = true
     @State private var isLeaderboardExpanded = true
-    @State private var timer: Timer? = nil
+    @State private var trainingStartTime: Date? = nil
+    @State private var elapsedTime: Int = 0
+    @State private var reportingTimer: Timer? = nil
+    @State private var elapsedTimer: Timer? = nil
+    @State private var disqualified: Bool = false
+    
+    //---
+    @StateObject private var announcer = Announcer()
+    @StateObject private var sessionManager = TrainingSessionManager()
+    //---
 
     var userId: String { userProfileManager.getCurrentUserId() }
     var nickname: String { userProfileManager.profile?.nickname ?? "Unknown" }
     var avatarName: String { userProfileManager.profile?.avatarName ?? "defaultAvatar" }
-    var currentRoundNameText: String { bluetoothManager.sessionManager?.currentRoundName ?? "–" }
-    var roundProgressValue: Double { bluetoothManager.currentForcePercentage }
-    var trainingProgressValue: Double { bluetoothManager.trainingProgressPercentage }
-
-    var isUserDisqualified: Bool {
-        progressManager.allProgress.first(where: { $0.userId == userId })?.isDisqualified ?? false
-    }
 
     var sortedProgress: [ChallengeProgress] {
         progressManager.allProgress.sorted { $0.totalForce > $1.totalForce }
+    }
+
+    var isUserDisqualified: Bool {
+        progressManager.allProgress.first(where: { $0.userId == userId })?.isDisqualified ?? false
     }
 
     var body: some View {
@@ -46,11 +51,34 @@ struct ChallengeTrainingView: View {
 
                 if isUserPanelExpanded {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Current Round: \(currentRoundNameText)").foregroundColor(.white)
-                        ProgressView("Round Progress", value: roundProgressValue, total: 100).accentColor(.green)
-                        ProgressView("Training Progress", value: trainingProgressValue, total: 100).accentColor(.blue)
+                        //Text("Current Round: \(bluetoothManager.sessionManager?.currentRoundName ?? "-")")
+                        Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "-")")
+                            .foregroundColor(.white)
+
+                        ProgressView("Round Progress",
+                                     value: bluetoothManager.currentForcePercentage,
+                                     total: 100)
+                            .accentColor(.green)
+
+                        ProgressView("Training Progress",
+                                     value: bluetoothManager.trainingProgressPercentage,
+                                     total: 100)
+                            .accentColor(.blue)
+
+                        Text("Elapsed Time: \(elapsedTime) sec")
+                            .foregroundColor(.gray)
+
+                        Button(action: stopChallenge) {
+                            Text("Stop Challenge")
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.red)
+                                .cornerRadius(8)
+                        }
                     }
-                    .padding().background(Color.gray.opacity(0.2)).cornerRadius(10)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
                 }
             }
             .padding([.horizontal, .top])
@@ -66,9 +94,8 @@ struct ChallengeTrainingView: View {
                 }
 
                 if isLeaderboardExpanded {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         let top5 = Array(sortedProgress.prefix(5))
-
                         ForEach(Array(top5.enumerated()), id: \.offset) { index, entry in
                             leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
                         }
@@ -80,7 +107,11 @@ struct ChallengeTrainingView: View {
                     }
                 }
             }
-            .padding().background(Color.gray.opacity(0.2)).cornerRadius(10).padding(.horizontal)
+            .padding()
+            .background(Color.gray.opacity(0.2))
+            .cornerRadius(10)
+            .padding(.horizontal)
+            .padding(.top, 10)
 
             if isUserDisqualified {
                 Text("You’ve been disqualified")
@@ -92,61 +123,124 @@ struct ChallengeTrainingView: View {
             Spacer()
         }
         .background(Color.black.ignoresSafeArea())
-        //.onAppear(perform: startChallenge)
-        //-----
         .onAppear {
-            print("🔵 ChallengeTrainingView appeared")
-            print("🔵 User ID: \(userId)")
-            print("🔵 Nickname: \(nickname)")
-            print("🔵 Round name: \(currentRoundNameText)")
-            print("🔵 Total Force: \(bluetoothManager.totalForce)")
-            print("🔵 isTrainingActive: \(bluetoothManager.isTrainingActive)")
-
+            bluetoothManager.announcer = announcer
+            bluetoothManager.sessionManager = sessionManager
             startChallenge()
         }
-        //-----
-        .onDisappear { timer?.invalidate(); progressManager.stopObserving() }
-    }
-
-    @ViewBuilder
-    private func leaderboardRow(index: Int, entry: ChallengeProgress, highlight: Bool) -> some View {
-        HStack {
-            Text("#\(index)").foregroundColor(.gray)
-            Image(entry.avatarName ?? "defaultAvatar")
-                .resizable().frame(width: 24, height: 24).clipShape(Circle())
-            Text(entry.nickname).foregroundColor(highlight ? .yellow : .white).bold()
-            Spacer()
-            Text("\(Int(entry.totalForce)) N").foregroundColor(.white)
-            if index == 1 { Image(systemName: "medal.fill").foregroundColor(.yellow) }
-            else if index == 2 { Image(systemName: "medal.fill").foregroundColor(.gray) }
-            else if index == 3 { Image(systemName: "medal.fill").foregroundColor(.orange) }
+        .onDisappear {
+            reportingTimer?.invalidate()
+            elapsedTimer?.invalidate()
+            progressManager.stopObserving()
         }
     }
 
     private func startChallenge() {
-        // ✅ Use the `training` parameter directly
-        bluetoothManager.sessionManager?.startNewSession(with: training.rounds)
-        bluetoothManager.isTrainingActive = true
+        UIApplication.shared.isIdleTimerDisabled = true
+        disqualified = false
 
-        progressManager.observeProgress(for: challenge.id)
+        bluetoothManager.announcer = announcer
+        bluetoothManager.sessionManager = sessionManager
+        bluetoothManager.resetMetrics()
+        sessionManager.reset()
+        
+        bluetoothManager.configureSensorSource()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-            let progress = ChallengeProgress(
-                userId: userId,
-                challengeId: challenge.id,
-                nickname: nickname,
-                avatarName: avatarName,
-                totalForce: bluetoothManager.totalForce,
-                totalStrikes: bluetoothManager.totalStrikes,
-                isDisqualified: false,
-                roundName: bluetoothManager.sessionManager?.currentRoundName ?? "",
-                roundNumber: bluetoothManager.sessionManager?.roundNumber ?? 1,
-                roundProgress: bluetoothManager.currentForcePercentage / 100,
-                createdAt: Date()
-            )
+        announcer.startCountdownThenBeginTraining {
+            bluetoothManager.isTrainingActive = true
+            sessionManager.startNewSession(with: training.rounds)
+            sessionManager.startSessionTimer()
+            trainingStartTime = Date()
 
-            progressManager.updateProgress(progress)
+            progressManager.observeProgress(for: challenge.id)
+
+            // Timer for elapsed time display
+            elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                if let start = trainingStartTime {
+                    elapsedTime = Int(Date().timeIntervalSince(start))
+                }
+
+                // Disqualification by cutoff logic
+                let cutoff = sessionManager.currentRound?.cutoffTime ?? 0
+                if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
+                    disqualified = true
+                    stopChallenge()
+                }
+
+                // Optional: Update announcer
+                announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
+            }
+
+            // Progress reporting to Firestore
+            reportingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+                let progress = ChallengeProgress(
+                    userId: userId,
+                    challengeId: challenge.id,
+                    nickname: nickname,
+                    avatarName: avatarName,
+                    totalForce: bluetoothManager.totalForce,
+                    totalStrikes: bluetoothManager.totalStrikes,
+                    isDisqualified: false,
+                    roundName: sessionManager.currentRoundName,
+                    roundNumber: sessionManager.roundNumber,
+                    roundProgress: bluetoothManager.currentForcePercentage / 100,
+                    createdAt: Date()
+                )
+                progressManager.updateProgress(progress)
+            }
+
+            announcer.start()
+        }
+    }
+
+    private func stopChallenge() {
+        reportingTimer?.invalidate()
+        elapsedTimer?.invalidate()
+        bluetoothManager.isTrainingActive = false
+
+        let summary = TrainingSummary(
+            trainingName: training.name,
+            date: Date(),
+            elapsedTime: elapsedTime,
+            disqualified: isUserDisqualified,
+            disqualifiedRound: isUserDisqualified ? bluetoothManager.sessionManager?.currentRoundName : nil,
+            totalForce: bluetoothManager.totalForce,
+            maxForce: bluetoothManager.maxForce,
+            averageForce: bluetoothManager.averageForce,
+            strikeCount: bluetoothManager.totalStrikes,
+            trainingGoalForce: training.rounds.map { $0.goalForce }.reduce(0.0, +),
+            trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
+            nickname: nickname
+        )
+
+        TrainingSummaryManager().saveSummary(summary) { result in
+            if case .failure(let error) = result {
+                print("⚠️ Failed to save training summary: \(error.localizedDescription)")
+            } else {
+                print("✅ Training summary saved")
+                dismiss()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func leaderboardRow(index: Int, entry: ChallengeProgress, highlight: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text("#\(index)").foregroundColor(.gray)
+            Image(entry.avatarName ?? "defaultAvatar")
+                .resizable().frame(width: 32, height: 32).clipShape(Circle())
+            Text(entry.nickname)
+                .foregroundColor(highlight ? .yellow : .white)
+                .bold()
+            Spacer()
+            Text("\(Int(entry.totalForce)) N").foregroundColor(.white)
+            if index == 1 {
+                Image(systemName: "medal.fill").foregroundColor(.yellow)
+            } else if index == 2 {
+                Image(systemName: "medal.fill").foregroundColor(.gray)
+            } else if index == 3 {
+                Image(systemName: "medal.fill").foregroundColor(.orange)
+            }
         }
     }
 }
-

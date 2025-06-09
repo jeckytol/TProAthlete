@@ -5,12 +5,12 @@ import FirebaseAuth
 @main
 struct PunchKickTrainingApp: App {
     @StateObject private var profileManager = UserProfileManager()
-    @StateObject private var bluetoothManager = BluetoothManager()
-    @State private var selectedTraining: SavedTraining? = nil
-
-
     
-    //-----
+    @StateObject private var bluetoothManager = BluetoothManager()
+   
+    @State private var selectedTraining: SavedTraining? = nil
+    
+    
     init() {
         FirebaseApp.configure()
         let _ = WatchConnectivityManager.shared
@@ -26,7 +26,6 @@ struct PunchKickTrainingApp: App {
             }
         }
     }
-    //----
 
     var body: some Scene {
         WindowGroup {

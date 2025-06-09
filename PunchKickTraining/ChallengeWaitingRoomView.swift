@@ -2,6 +2,7 @@ import SwiftUI
 import Firebase
 
 struct ChallengeWaitingRoomView: View {
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     let challenge: Challenge
     @AppStorage("nickname") private var nickname: String = ""
 
@@ -16,9 +17,15 @@ struct ChallengeWaitingRoomView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
+            //----
             if isChallengeStarted, let training = matchedTraining {
                 ChallengeTrainingView(challenge: challenge, training: training)
-            } else {
+                    .environmentObject(bluetoothManager)
+                    .onAppear {
+                        bluetoothManager.sessionManager?.startNewSession(with: training.rounds)
+                    }
+            }
+            else {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Waiting Room")
                         .font(.largeTitle.bold())
