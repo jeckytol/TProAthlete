@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct ChallengeTrainingView: View {
     let challenge: Challenge
@@ -11,6 +12,7 @@ struct ChallengeTrainingView: View {
     @Environment(\.dismiss) var dismiss
 
     @StateObject private var progressManager = ChallengeProgressManager()
+    
 
     @State private var isUserPanelExpanded = true
     @State private var isLeaderboardExpanded = true
@@ -134,16 +136,26 @@ struct ChallengeTrainingView: View {
             progressManager.stopObserving()
         }
     }
-
+    
+    //-----
+    
     private func startChallenge() {
         UIApplication.shared.isIdleTimerDisabled = true
         disqualified = false
 
+        // ⬅️ AVAudioSession activation
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.allowBluetooth, .mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("⚠️ Failed to activate AVAudioSession: \(error.localizedDescription)")
+        }
+
         bluetoothManager.announcer = announcer
         bluetoothManager.sessionManager = sessionManager
+
         bluetoothManager.resetMetrics()
         sessionManager.reset()
-        
         bluetoothManager.configureSensorSource()
 
         announcer.startCountdownThenBeginTraining {
@@ -154,24 +166,22 @@ struct ChallengeTrainingView: View {
 
             progressManager.observeProgress(for: challenge.id)
 
-            // Timer for elapsed time display
             elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                 if let start = trainingStartTime {
                     elapsedTime = Int(Date().timeIntervalSince(start))
                 }
 
-                // Disqualification by cutoff logic
                 let cutoff = sessionManager.currentRound?.cutoffTime ?? 0
                 if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
                     disqualified = true
                     stopChallenge()
                 }
 
-                // Optional: Update announcer
                 announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
             }
 
-            // Progress reporting to Firestore
+            announcer.start()
+
             reportingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
                 let progress = ChallengeProgress(
                     userId: userId,
@@ -188,16 +198,17 @@ struct ChallengeTrainingView: View {
                 )
                 progressManager.updateProgress(progress)
             }
-
-            announcer.start()
         }
     }
-
+    
+    //-------
+    
     private func stopChallenge() {
         reportingTimer?.invalidate()
         elapsedTimer?.invalidate()
         bluetoothManager.isTrainingActive = false
-
+        announcer.stop()
+        
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
