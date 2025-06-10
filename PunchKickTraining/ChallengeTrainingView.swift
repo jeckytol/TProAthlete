@@ -5,14 +5,13 @@ struct ChallengeTrainingView: View {
     let challenge: Challenge
     let training: SavedTraining
 
-    //@ObservedObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var bluetoothManager: BluetoothManager
-    
     @EnvironmentObject var userProfileManager: UserProfileManager
     @Environment(\.dismiss) var dismiss
 
     @StateObject private var progressManager = ChallengeProgressManager()
-    
+    @StateObject private var announcer = Announcer()
+    @StateObject private var sessionManager = TrainingSessionManager()
 
     @State private var isUserPanelExpanded = true
     @State private var isLeaderboardExpanded = true
@@ -21,11 +20,7 @@ struct ChallengeTrainingView: View {
     @State private var reportingTimer: Timer? = nil
     @State private var elapsedTimer: Timer? = nil
     @State private var disqualified: Bool = false
-    
-    //---
-    @StateObject private var announcer = Announcer()
-    @StateObject private var sessionManager = TrainingSessionManager()
-    //---
+    @State private var hasChallengeEnded = false
 
     var userId: String { userProfileManager.getCurrentUserId() }
     var nickname: String { userProfileManager.profile?.nickname ?? "Unknown" }
@@ -40,91 +35,123 @@ struct ChallengeTrainingView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // User Progress
-            VStack(spacing: 10) {
-                HStack {
-                    Text("Your Progress").font(.headline).foregroundColor(.white)
-                    Spacer()
-                    Image(systemName: isUserPanelExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.white)
-                        .onTapGesture { withAnimation { isUserPanelExpanded.toggle() } }
-                }
-
-                if isUserPanelExpanded {
-                    VStack(alignment: .leading, spacing: 10) {
-                        //Text("Current Round: \(bluetoothManager.sessionManager?.currentRoundName ?? "-")")
-                        Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "-")")
+        ZStack {
+            VStack(spacing: 0) {
+                VStack(spacing: 10) {
+                    if hasChallengeEnded {
+                        Text(isUserDisqualified ? "Disqualified" : "Challenge Complete")
+                            .font(.title2)
+                            .bold()
                             .foregroundColor(.white)
+                            .padding()
+                            .background(isUserDisqualified ? Color.red : Color.green)
+                            .cornerRadius(10)
+                            .padding(.top)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .animation(.easeInOut, value: hasChallengeEnded)
+                    }
 
-                        ProgressView("Round Progress",
-                                     value: bluetoothManager.currentForcePercentage,
-                                     total: 100)
-                            .accentColor(.green)
+                    HStack {
+                        Text("Your Progress").font(.headline).foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: isUserPanelExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.white)
+                            .onTapGesture { withAnimation { isUserPanelExpanded.toggle() } }
+                    }
 
-                        ProgressView("Training Progress",
-                                     value: bluetoothManager.trainingProgressPercentage,
-                                     total: 100)
-                            .accentColor(.blue)
-
-                        Text("Elapsed Time: \(elapsedTime) sec")
-                            .foregroundColor(.gray)
-
-                        Button(action: stopChallenge) {
-                            Text("Stop Challenge")
+                    if isUserPanelExpanded {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "–")")
                                 .foregroundColor(.white)
-                                .padding(8)
-                                .background(Color.red)
-                                .cornerRadius(8)
+
+                            ProgressView("Round Progress",
+                                         value: bluetoothManager.currentForcePercentage,
+                                         total: 100)
+                                .accentColor(.green)
+
+                            ProgressView("Training Progress",
+                                         value: bluetoothManager.trainingProgressPercentage,
+                                         total: 100)
+                                .accentColor(.blue)
+
+                            Text("Elapsed Time: \(elapsedTime) sec")
+                                .foregroundColor(.gray)
+
+                            if hasChallengeEnded {
+                                Text("Challenge Complete")
+                                    .foregroundColor(.gray)
+                                    .padding(8)
+                                    .background(Color.gray.opacity(0.4))
+                                    .cornerRadius(8)
+                            } else {
+                                Button(action: stopChallenge) {
+                                    Text("Stop Challenge")
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.red)
+                                        .cornerRadius(8)
+                                }
+                                .disabled(hasChallengeEnded)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(10)
+                    }
+                }
+                .padding([.horizontal, .top])
+
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("Leaderboard").font(.headline).foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: isLeaderboardExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.white)
+                            .onTapGesture { withAnimation { isLeaderboardExpanded.toggle() } }
+                    }
+
+                    if isLeaderboardExpanded {
+                        VStack(spacing: 12) {
+                            let top5 = Array(sortedProgress.prefix(5))
+                            ForEach(Array(top5.enumerated()), id: \ .offset) { index, entry in
+                                leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
+                            }
+
+                            if let userIndex = sortedProgress.firstIndex(where: { $0.userId == userId }), userIndex >= 5 {
+                                Divider().background(Color.white.opacity(0.5))
+                                leaderboardRow(index: userIndex + 1, entry: sortedProgress[userIndex], highlight: true)
+                            }
                         }
                     }
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(10)
                 }
-            }
-            .padding([.horizontal, .top])
+                .padding()
+                .background(Color.gray.opacity(0.2))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .padding(.top, 10)
 
-            // Leaderboard
-            VStack(spacing: 10) {
-                HStack {
-                    Text("Leaderboard").font(.headline).foregroundColor(.white)
-                    Spacer()
-                    Image(systemName: isLeaderboardExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.white)
-                        .onTapGesture { withAnimation { isLeaderboardExpanded.toggle() } }
+                if isUserDisqualified {
+                    Text("You’ve been disqualified")
+                        .foregroundColor(.red)
+                        .font(.headline)
+                        .padding(.top, 10)
                 }
 
-                if isLeaderboardExpanded {
-                    VStack(spacing: 12) {
-                        let top5 = Array(sortedProgress.prefix(5))
-                        ForEach(Array(top5.enumerated()), id: \.offset) { index, entry in
-                            leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
-                        }
-
-                        if let userIndex = sortedProgress.firstIndex(where: { $0.userId == userId }), userIndex >= 5 {
-                            Divider().background(Color.white.opacity(0.5))
-                            leaderboardRow(index: userIndex + 1, entry: sortedProgress[userIndex], highlight: true)
-                        }
-                    }
-                }
+                Spacer()
             }
-            .padding()
-            .background(Color.gray.opacity(0.2))
-            .cornerRadius(10)
-            .padding(.horizontal)
-            .padding(.top, 10)
+            .background(Color.black.ignoresSafeArea())
 
-            if isUserDisqualified {
-                Text("You’ve been disqualified")
-                    .foregroundColor(.red)
-                    .font(.headline)
-                    .padding(.top, 10)
+            if let countdownText = announcer.visualCountdown {
+                Text(countdownText)
+                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(20)
+                    .background(Color.black.opacity(0.6))
+                    .clipShape(Circle())
+                    .shadow(radius: 10)
+                    .transition(.scale)
             }
-
-            Spacer()
         }
-        .background(Color.black.ignoresSafeArea())
         .onAppear {
             bluetoothManager.announcer = announcer
             bluetoothManager.sessionManager = sessionManager
@@ -134,16 +161,17 @@ struct ChallengeTrainingView: View {
             reportingTimer?.invalidate()
             elapsedTimer?.invalidate()
             progressManager.stopObserving()
+            if !hasChallengeEnded {
+                hasChallengeEnded = true
+                stopChallenge()
+            }
         }
     }
-    
-    //-----
-    
+
     private func startChallenge() {
         UIApplication.shared.isIdleTimerDisabled = true
         disqualified = false
 
-        // ⬅️ AVAudioSession activation
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.allowBluetooth, .mixWithOthers])
             try AVAudioSession.sharedInstance().setActive(true)
@@ -177,6 +205,11 @@ struct ChallengeTrainingView: View {
                     stopChallenge()
                 }
 
+                if !hasChallengeEnded && bluetoothManager.trainingProgressPercentage >= 100 {
+                    hasChallengeEnded = true
+                    stopChallenge()
+                }
+
                 announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
             }
 
@@ -200,15 +233,13 @@ struct ChallengeTrainingView: View {
             }
         }
     }
-    
-    //-------
-    
+
     private func stopChallenge() {
         reportingTimer?.invalidate()
         elapsedTimer?.invalidate()
         bluetoothManager.isTrainingActive = false
         announcer.stop()
-        
+
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
@@ -229,7 +260,6 @@ struct ChallengeTrainingView: View {
                 print("⚠️ Failed to save training summary: \(error.localizedDescription)")
             } else {
                 print("✅ Training summary saved")
-                dismiss()
             }
         }
     }

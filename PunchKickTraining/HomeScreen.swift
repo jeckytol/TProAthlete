@@ -189,15 +189,16 @@ struct HomeScreen: View {
         }
     }
 
+   
+    //---
     private func handleSave(_ saved: SavedTraining) {
-        if let index = trainings.firstIndex(where: { $0.id == saved.id }) {
-            trainings[index] = saved
-        } else {
-            trainings.append(saved)
-        }
+        trainings.removeAll { $0.id == saved.id }
+        trainings.append(saved)
+        trainings.sort { $0.creationDate > $1.creationDate }
         SavedTraining.saveAll(trainings)
         navigationIntent = nil
     }
+    //---
 
     private func deleteTraining(_ training: SavedTraining) {
         trainings.removeAll { $0.id == training.id }
