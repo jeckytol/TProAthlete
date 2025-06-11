@@ -24,7 +24,7 @@ struct SettingsFormView: View {
     private let athleteTypes = ["Beginner", "Amateur", "Pro"]
     private let avatarOptions = [
         "avatar_bear", "avatar_shark", "avatar_lion",
-        "avatar_snake", "avatar_elephant", "avatar_monkey"
+        "avatar_snake", "avatar_elephant", "avatar_monkey","avatar_rhino","avatar_bull","avatar_kangaroo","avatar_hanoch"
     ]
 
     var body: some View {

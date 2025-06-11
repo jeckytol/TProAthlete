@@ -63,19 +63,27 @@ struct ChallengeTrainingView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "–")")
                                 .foregroundColor(.white)
+                                .bold()
 
-                            ProgressView("Round Progress",
-                                         value: bluetoothManager.currentForcePercentage,
-                                         total: 100)
-                                .accentColor(.green)
+                            VStack(alignment: .leading) {
+                                Text("Round Progress")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                ProgressView(value: bluetoothManager.currentForcePercentage, total: 100)
+                                    .accentColor(.green)
+                            }
 
-                            ProgressView("Training Progress",
-                                         value: bluetoothManager.trainingProgressPercentage,
-                                         total: 100)
-                                .accentColor(.blue)
+                            VStack(alignment: .leading) {
+                                Text("Training Progress")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                ProgressView(value: bluetoothManager.trainingProgressPercentage, total: 100)
+                                    .accentColor(.blue)
+                            }
 
                             Text("Elapsed Time: \(elapsedTime) sec")
-                                .foregroundColor(.gray)
+                                .foregroundColor(.white)
+                                .bold()
 
                             if hasChallengeEnded {
                                 Text("Challenge Complete")
@@ -84,12 +92,25 @@ struct ChallengeTrainingView: View {
                                     .background(Color.gray.opacity(0.4))
                                     .cornerRadius(8)
                             } else {
-                                Button(action: stopChallenge) {
+                                Button(action: {
+                                    if !hasChallengeEnded {
+                                        DispatchQueue.main.async {
+                                            hasChallengeEnded = true
+                                        }
+                                        stopChallenge()
+                                    }
+                                }) {
                                     Text("Stop Challenge")
                                         .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Color.red)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(hasChallengeEnded ? Color.gray : Color.red)
                                         .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.white.opacity(0.3), lineWidth: hasChallengeEnded ? 1 : 0)
+                                        )
+                                        .opacity(hasChallengeEnded ? 0.5 : 1.0)
                                 }
                                 .disabled(hasChallengeEnded)
                             }
@@ -111,7 +132,7 @@ struct ChallengeTrainingView: View {
                     }
 
                     if isLeaderboardExpanded {
-                        VStack(spacing: 12) {
+                        VStack(spacing: 14) {
                             let top5 = Array(sortedProgress.prefix(5))
                             ForEach(Array(top5.enumerated()), id: \ .offset) { index, entry in
                                 leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
@@ -162,7 +183,9 @@ struct ChallengeTrainingView: View {
             elapsedTimer?.invalidate()
             progressManager.stopObserving()
             if !hasChallengeEnded {
-                hasChallengeEnded = true
+                DispatchQueue.main.async {
+                    hasChallengeEnded = true
+                }
                 stopChallenge()
             }
         }
@@ -202,11 +225,18 @@ struct ChallengeTrainingView: View {
                 let cutoff = sessionManager.currentRound?.cutoffTime ?? 0
                 if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
                     disqualified = true
-                    stopChallenge()
+                    if !hasChallengeEnded {
+                        DispatchQueue.main.async {
+                            hasChallengeEnded = true
+                        }
+                        stopChallenge()
+                    }
                 }
 
                 if !hasChallengeEnded && bluetoothManager.trainingProgressPercentage >= 100 {
-                    hasChallengeEnded = true
+                    DispatchQueue.main.async {
+                        hasChallengeEnded = true
+                    }
                     stopChallenge()
                 }
 
@@ -266,15 +296,22 @@ struct ChallengeTrainingView: View {
 
     @ViewBuilder
     private func leaderboardRow(index: Int, entry: ChallengeProgress, highlight: Bool) -> some View {
-        HStack(spacing: 12) {
-            Text("#\(index)").foregroundColor(.gray)
+        HStack(spacing: 16) {
+            Text("#\(index)")
+                .foregroundColor(.gray)
+                .font(.subheadline)
             Image(entry.avatarName ?? "defaultAvatar")
-                .resizable().frame(width: 32, height: 32).clipShape(Circle())
+                .resizable()
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
             Text(entry.nickname)
                 .foregroundColor(highlight ? .yellow : .white)
+                .font(.headline)
                 .bold()
             Spacer()
-            Text("\(Int(entry.totalForce)) N").foregroundColor(.white)
+            Text("\(Int(entry.totalForce)) N")
+                .foregroundColor(.white)
+                .font(.subheadline)
             if index == 1 {
                 Image(systemName: "medal.fill").foregroundColor(.yellow)
             } else if index == 2 {
@@ -283,5 +320,8 @@ struct ChallengeTrainingView: View {
                 Image(systemName: "medal.fill").foregroundColor(.orange)
             }
         }
+        .padding(6)
+        .background(highlight ? Color.white.opacity(0.1) : Color.clear)
+        .cornerRadius(8)
     }
 }
