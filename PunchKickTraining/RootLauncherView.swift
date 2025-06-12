@@ -1,10 +1,3 @@
-//
-//  RootLauncherView.swift
-//  TProAthlete
-//
-//  Created by Jecky Toledo on 10/05/2025.
-//
-
 import SwiftUI
 
 struct RootLauncherView: View {
@@ -12,9 +5,11 @@ struct RootLauncherView: View {
     @EnvironmentObject var profileManager: UserProfileManager
     @Binding var selectedTraining: SavedTraining?
 
+    @State private var hasMinimumDelayPassed = false
+
     var body: some View {
         Group {
-            if profileManager.isLoading {
+            if profileManager.isLoading || !hasMinimumDelayPassed {
                 LoadingView()
             } else if profileManager.profile == nil {
                 UserProfileView(profileManager: profileManager)
@@ -27,6 +22,11 @@ struct RootLauncherView: View {
         }
         .onAppear {
             profileManager.loadProfile()
+
+            // Delay flag for minimum display duration of LoadingView
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                hasMinimumDelayPassed = true
+            }
         }
     }
 }
