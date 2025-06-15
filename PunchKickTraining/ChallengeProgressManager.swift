@@ -13,13 +13,15 @@ class ChallengeProgressManager: ObservableObject {
     @Published var allProgress: [ChallengeProgress] = []
     private var listener: ListenerRegistration?
 
+    /// Save or update challenge progress for a specific run
     func updateProgress(_ progress: ChallengeProgress) {
-        guard !progress.challengeId.isEmpty else {
-            print("[Progress] Skipped update — missing challengeId")
+        guard !progress.challengeId.isEmpty, !progress.runId.isEmpty else {
+            print("[Progress] Skipped update — missing challengeId or runId")
             return
         }
 
-        let documentId = "\(progress.challengeId)_\(progress.userId)"
+        // Document ID now includes runId to avoid overwriting past runs
+        let documentId = "\(progress.challengeId)_\(progress.runId)_\(progress.userId)"
 
         do {
             try db.collection(collection)
@@ -30,11 +32,13 @@ class ChallengeProgressManager: ObservableObject {
         }
     }
 
-    func observeProgress(for challengeId: String) {
-        listener?.remove()  // remove previous listener if any
+    /// Observe leaderboard progress for a specific run of a challenge
+    func observeProgress(for challengeId: String, runId: String) {
+        stopObserving() // remove previous listener if any
 
         listener = db.collection(collection)
             .whereField("challengeId", isEqualTo: challengeId)
+            .whereField("runId", isEqualTo: runId)
             .order(by: "totalForce", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
@@ -58,4 +62,3 @@ class ChallengeProgressManager: ObservableObject {
         listener = nil
     }
 }
-

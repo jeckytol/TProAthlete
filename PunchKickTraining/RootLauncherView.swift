@@ -8,23 +8,33 @@ struct RootLauncherView: View {
     @State private var hasMinimumDelayPassed = false
 
     var body: some View {
-        Group {
+        ZStack {
+            // Background view logic (post-loading)
+            if !profileManager.isLoading && hasMinimumDelayPassed {
+                if profileManager.profile == nil {
+                    UserProfileView(profileManager: profileManager)
+                        .transition(.opacity)
+                } else if let training = selectedTraining {
+                    ContentView(training: training, selectedTraining: $selectedTraining)
+                        .transition(.opacity)
+                } else {
+                    HomeScreen(selectedTraining: $selectedTraining)
+                        .environmentObject(bluetoothManager)
+                        .transition(.opacity)
+                }
+            }
+
+            // Loading overlay
             if profileManager.isLoading || !hasMinimumDelayPassed {
                 LoadingView()
-            } else if profileManager.profile == nil {
-                UserProfileView(profileManager: profileManager)
-            } else if let training = selectedTraining {
-                ContentView(training: training, selectedTraining: $selectedTraining)
-            } else {
-                HomeScreen(selectedTraining: $selectedTraining)
-                    .environmentObject(bluetoothManager)
+                    .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 1), value: hasMinimumDelayPassed)
         .onAppear {
             profileManager.loadProfile()
 
-            // Delay flag for minimum display duration of LoadingView
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 hasMinimumDelayPassed = true
             }
         }

@@ -26,130 +26,23 @@ struct ChallengeTrainingView: View {
     var nickname: String { userProfileManager.profile?.nickname ?? "Unknown" }
     var avatarName: String { userProfileManager.profile?.avatarName ?? "defaultAvatar" }
 
+    var runId: String { challenge.runId ?? "default-run" }
+
     var sortedProgress: [ChallengeProgress] {
-        progressManager.allProgress.sorted { $0.totalForce > $1.totalForce }
+        progressManager.allProgress
+            .filter { $0.runId == runId }
+            .sorted { $0.totalForce > $1.totalForce }
     }
 
     var isUserDisqualified: Bool {
-        progressManager.allProgress.first(where: { $0.userId == userId })?.isDisqualified ?? false
+        progressManager.allProgress.first(where: { $0.userId == userId && $0.runId == runId })?.isDisqualified ?? false
     }
 
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                VStack(spacing: 10) {
-                    if hasChallengeEnded {
-                        Text(isUserDisqualified ? "Disqualified" : "Challenge Complete")
-                            .font(.title2)
-                            .bold()
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(isUserDisqualified ? Color.red : Color.green)
-                            .cornerRadius(10)
-                            .padding(.top)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                            .animation(.easeInOut, value: hasChallengeEnded)
-                    }
-
-                    HStack {
-                        Text("Your Progress").font(.headline).foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: isUserPanelExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundColor(.white)
-                            .onTapGesture { withAnimation { isUserPanelExpanded.toggle() } }
-                    }
-
-                    if isUserPanelExpanded {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "–")")
-                                .foregroundColor(.white)
-                                .bold()
-
-                            VStack(alignment: .leading) {
-                                Text("Round Progress")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                ProgressView(value: bluetoothManager.currentForcePercentage, total: 100)
-                                    .accentColor(.green)
-                            }
-
-                            VStack(alignment: .leading) {
-                                Text("Training Progress")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                ProgressView(value: bluetoothManager.trainingProgressPercentage, total: 100)
-                                    .accentColor(.blue)
-                            }
-
-                            Text("Elapsed Time: \(elapsedTime) sec")
-                                .foregroundColor(.white)
-                                .bold()
-
-                            if hasChallengeEnded {
-                                Text("Challenge Complete")
-                                    .foregroundColor(.gray)
-                                    .padding(8)
-                                    .background(Color.gray.opacity(0.4))
-                                    .cornerRadius(8)
-                            } else {
-                                Button(action: {
-                                    if !hasChallengeEnded {
-                                        DispatchQueue.main.async {
-                                            hasChallengeEnded = true
-                                        }
-                                        stopChallenge()
-                                    }
-                                }) {
-                                    Text("Stop Challenge")
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(hasChallengeEnded ? Color.gray : Color.red)
-                                        .cornerRadius(8)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: hasChallengeEnded ? 1 : 0)
-                                        )
-                                        .opacity(hasChallengeEnded ? 0.5 : 1.0)
-                                }
-                                .disabled(hasChallengeEnded)
-                            }
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(10)
-                    }
-                }
-                .padding([.horizontal, .top])
-
-                VStack(spacing: 10) {
-                    HStack {
-                        Text("Leaderboard").font(.headline).foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: isLeaderboardExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundColor(.white)
-                            .onTapGesture { withAnimation { isLeaderboardExpanded.toggle() } }
-                    }
-
-                    if isLeaderboardExpanded {
-                        VStack(spacing: 14) {
-                            let top5 = Array(sortedProgress.prefix(5))
-                            ForEach(Array(top5.enumerated()), id: \ .offset) { index, entry in
-                                leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
-                            }
-
-                            if let userIndex = sortedProgress.firstIndex(where: { $0.userId == userId }), userIndex >= 5 {
-                                Divider().background(Color.white.opacity(0.5))
-                                leaderboardRow(index: userIndex + 1, entry: sortedProgress[userIndex], highlight: true)
-                            }
-                        }
-                    }
-                }
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .padding(.top, 10)
+                headerSection
+                leaderboardSection
 
                 if isUserDisqualified {
                     Text("You’ve been disqualified")
@@ -191,6 +84,105 @@ struct ChallengeTrainingView: View {
         }
     }
 
+    private var headerSection: some View {
+        VStack(spacing: 10) {
+            if hasChallengeEnded {
+                Text(isUserDisqualified ? "Disqualified" : "Challenge Complete")
+                    .font(.title2)
+                    .bold()
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(isUserDisqualified ? Color.red : Color.green)
+                    .cornerRadius(10)
+                    .padding(.top)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut, value: hasChallengeEnded)
+            }
+
+            HStack {
+                Text("Your Progress").font(.headline).foregroundColor(.white)
+                Spacer()
+                Image(systemName: isUserPanelExpanded ? "chevron.up" : "chevron.down")
+                    .foregroundColor(.white)
+                    .onTapGesture { withAnimation { isUserPanelExpanded.toggle() } }
+            }
+
+            if isUserPanelExpanded {
+                userProgressPanel
+            }
+        }
+        .padding([.horizontal, .top])
+    }
+
+    private var userProgressPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "–")")
+                .foregroundColor(.white)
+                .bold()
+
+            ProgressView(value: bluetoothManager.currentForcePercentage, total: 100) {
+                Text("Round Progress").font(.caption).foregroundColor(.gray)
+            }.accentColor(.green)
+
+            ProgressView(value: bluetoothManager.trainingProgressPercentage, total: 100) {
+                Text("Training Progress").font(.caption).foregroundColor(.gray)
+            }.accentColor(.blue)
+
+            Text("Elapsed Time: \(elapsedTime) sec")
+                .foregroundColor(.white)
+                .bold()
+
+            Button(action: {
+                if !hasChallengeEnded {
+                    hasChallengeEnded = true
+                    stopChallenge()
+                }
+            }) {
+                Text("Stop Challenge")
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(hasChallengeEnded ? Color.gray : Color.red)
+                    .cornerRadius(8)
+                    .opacity(hasChallengeEnded ? 0.5 : 1.0)
+            }.disabled(hasChallengeEnded)
+        }
+        .padding()
+        .background(Color.gray.opacity(0.2))
+        .cornerRadius(10)
+    }
+
+    private var leaderboardSection: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("Leaderboard").font(.headline).foregroundColor(.white)
+                Spacer()
+                Image(systemName: isLeaderboardExpanded ? "chevron.up" : "chevron.down")
+                    .foregroundColor(.white)
+                    .onTapGesture { withAnimation { isLeaderboardExpanded.toggle() } }
+            }
+
+            if isLeaderboardExpanded {
+                VStack(spacing: 14) {
+                    let top5 = Array(sortedProgress.prefix(5))
+                    ForEach(Array(top5.enumerated()), id: \ .offset) { index, entry in
+                        leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
+                    }
+
+                    if let userIndex = sortedProgress.firstIndex(where: { $0.userId == userId }), userIndex >= 5 {
+                        Divider().background(Color.white.opacity(0.5))
+                        leaderboardRow(index: userIndex + 1, entry: sortedProgress[userIndex], highlight: true)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.2))
+        .cornerRadius(10)
+        .padding(.horizontal)
+        .padding(.top, 10)
+    }
+
     private func startChallenge() {
         UIApplication.shared.isIdleTimerDisabled = true
         disqualified = false
@@ -215,7 +207,8 @@ struct ChallengeTrainingView: View {
             sessionManager.startSessionTimer()
             trainingStartTime = Date()
 
-            progressManager.observeProgress(for: challenge.id)
+            print("📡 Observing progress for challengeId: \(challenge.id), runId: \(runId)")
+            progressManager.observeProgress(for: challenge.id, runId: runId)
 
             elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                 if let start = trainingStartTime {
@@ -226,17 +219,13 @@ struct ChallengeTrainingView: View {
                 if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
                     disqualified = true
                     if !hasChallengeEnded {
-                        DispatchQueue.main.async {
-                            hasChallengeEnded = true
-                        }
+                        hasChallengeEnded = true
                         stopChallenge()
                     }
                 }
 
                 if !hasChallengeEnded && bluetoothManager.trainingProgressPercentage >= 100 {
-                    DispatchQueue.main.async {
-                        hasChallengeEnded = true
-                    }
+                    hasChallengeEnded = true
                     stopChallenge()
                 }
 
@@ -249,6 +238,7 @@ struct ChallengeTrainingView: View {
                 let progress = ChallengeProgress(
                     userId: userId,
                     challengeId: challenge.id,
+                    runId: runId,
                     nickname: nickname,
                     avatarName: avatarName,
                     totalForce: bluetoothManager.totalForce,
@@ -259,6 +249,7 @@ struct ChallengeTrainingView: View {
                     roundProgress: bluetoothManager.currentForcePercentage / 100,
                     createdAt: Date()
                 )
+                print("⬆️ Uploading progress: \(progress.nickname), runId: \(progress.runId), force: \(progress.totalForce)")
                 progressManager.updateProgress(progress)
             }
         }

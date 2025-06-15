@@ -14,6 +14,8 @@ struct ChallengeProgress: Codable, Identifiable {
 
     var userId: String           // Device or user identifier
     var challengeId: String
+    var runId: String            // 🔹 Unique ID for this specific training run of the challenge
+
     var nickname: String
     var avatarName: String?
 

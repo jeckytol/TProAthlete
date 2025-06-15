@@ -5,12 +5,9 @@ import FirebaseAuth
 @main
 struct PunchKickTrainingApp: App {
     @StateObject private var profileManager = UserProfileManager()
-    
     @StateObject private var bluetoothManager = BluetoothManager()
-   
     @State private var selectedTraining: SavedTraining? = nil
-    
-    
+
     init() {
         FirebaseApp.configure()
         let _ = WatchConnectivityManager.shared
@@ -29,22 +26,9 @@ struct PunchKickTrainingApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if profileManager.isLoading {
-                    LoadingView()
-                } else if profileManager.profile == nil {
-                    UserProfileView(profileManager: profileManager)
-                } else if let training = selectedTraining {
-                    ContentView(training: training, selectedTraining: $selectedTraining)
-                } else {
-                    HomeScreen(selectedTraining: $selectedTraining)
-                }
-            }
-            .environmentObject(profileManager)
-            .environmentObject(bluetoothManager)
-            .onAppear {
-                profileManager.loadProfile()
-            }
+            RootLauncherView(selectedTraining: $selectedTraining)
+                .environmentObject(profileManager)
+                .environmentObject(bluetoothManager)
         }
     }
 }

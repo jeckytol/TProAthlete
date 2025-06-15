@@ -16,6 +16,8 @@ struct Challenge: Identifiable, Codable, Equatable {
     let comment: String
     let creatorNickname: String
     var registeredNicknames: [String]
+    
+    var runId: String?
 }
 extension Challenge: Hashable {
     static func == (lhs: Challenge, rhs: Challenge) -> Bool {
