@@ -9,10 +9,9 @@ class ChallengeListViewModel: ObservableObject {
     @AppStorage("nickname") private var nickname: String = ""
     
     func truncatedComment(_ text: String) -> String {
-            let words = text.split(separator: " ")
-            return words.count <= 6 ? text : words.prefix(6).joined(separator: " ") + "..."
+        let words = text.split(separator: " ")
+        return words.count <= 6 ? text : words.prefix(6).joined(separator: " ") + "..."
     }
-
 
     func fetchChallenges() {
         isLoading = true
@@ -52,6 +51,8 @@ class ChallengeListViewModel: ObservableObject {
                             return nil
                         }
 
+                        let runId = data["runId"] as? String  // ✅ Extract runId
+
                         return Challenge(
                             id: doc.documentID,
                             challengeName: name,
@@ -60,18 +61,19 @@ class ChallengeListViewModel: ObservableObject {
                             difficulty: difficulty,
                             comment: comment,
                             creatorNickname: creator,
-                            registeredNicknames: registered
+                            registeredNicknames: registered,
+                            runId: runId // ✅ Include runId
                         )
                     }
                 }
             }
     }
-    
+
     func toggleRegistration(for challenge: Challenge) {
         let db = Firestore.firestore()
         guard let index = challenges.firstIndex(where: { $0.id == challenge.id }) else { return }
         var updated = challenges[index]
-        
+
         @AppStorage("nickname") var nickname: String = ""
 
         if updated.registeredNicknames.contains(nickname) {
@@ -97,13 +99,13 @@ class ChallengeListViewModel: ObservableObject {
     func isRegistered(_ challenge: Challenge) -> Bool {
         return challenge.registeredNicknames.contains(nickname)
     }
-    
+
     func canEnterWaitingRoom(for challenge: Challenge) -> Bool {
         let now = Date()
         let threshold = challenge.startTime.addingTimeInterval(-15 * 60)
-        return now >= threshold && now <= challenge.startTime && challenge.registeredNicknames.contains(nickname)
+        return now >= threshold && now <= challenge.startTime && isRegistered(challenge)
     }
-    
+
     func deleteChallenge(_ challenge: Challenge) {
         let db = Firestore.firestore()
         db.collection("challenges").document(challenge.id).delete { error in

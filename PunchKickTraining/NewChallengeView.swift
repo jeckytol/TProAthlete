@@ -15,8 +15,11 @@ struct NewChallengeView: View {
     @State private var publicTrainings: [SavedTraining] = []
     @State private var selectedTraining: SavedTraining?
 
+    @State private var runId: String = UUID().uuidString
+    @State private var isSaving: Bool = false
+
     var isSaveEnabled: Bool {
-        !challengeName.isEmpty && selectedTraining != nil
+        !challengeName.isEmpty && selectedTraining != nil && !isSaving
     }
 
     var body: some View {
@@ -180,6 +183,7 @@ struct NewChallengeView: View {
             challengeDate = challenge.startTime
             difficulty = challenge.difficulty
             comment = challenge.comment
+            runId = challenge.runId ?? UUID().uuidString
         }
     }
 
@@ -234,6 +238,8 @@ struct NewChallengeView: View {
     private func saveChallenge() {
         guard let selected = selectedTraining else { return }
 
+        isSaving = true
+
         let db = Firestore.firestore()
         let challengeID = editingChallenge?.id ?? UUID().uuidString
 
@@ -245,7 +251,8 @@ struct NewChallengeView: View {
             difficulty: difficulty,
             comment: comment,
             creatorNickname: nickname,
-            registeredNicknames: editingChallenge?.registeredNicknames ?? []
+            registeredNicknames: editingChallenge?.registeredNicknames ?? [],
+            runId: runId
         )
 
         let challengeData: [String: Any] = [
@@ -255,14 +262,18 @@ struct NewChallengeView: View {
             "difficulty": updated.difficulty,
             "comment": updated.comment,
             "creatorNickname": updated.creatorNickname,
-            "registeredNicknames": updated.registeredNicknames
+            "registeredNicknames": updated.registeredNicknames,
+            "runId": updated.runId ?? UUID().uuidString
         ]
 
         db.collection("challenges").document(challengeID).setData(challengeData) { error in
+            isSaving = false
+
             if let error = error {
                 print("❌ Error saving challenge: \(error)")
             } else {
-                onUpdate?()  // 🔁 Refresh parent view
+                print("✅ Challenge saved with runId: \(runId)")
+                onUpdate?()
                 dismiss()
             }
         }

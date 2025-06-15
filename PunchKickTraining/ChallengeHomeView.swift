@@ -39,7 +39,7 @@ struct ChallengeHomeView: View {
                 ChallengeWaitingRoomView(challenge: challenge)
                     .environmentObject(bluetoothManager)
             }
-            .sheet(item: $editingChallenge) { challenge in
+            .sheet(item: $editingChallenge) { _ in
                 NewChallengeView(editingChallenge: $editingChallenge) {
                     viewModel.fetchChallenges()
                     editingChallenge = nil
@@ -54,7 +54,9 @@ struct ChallengeHomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        isPresentingNewChallenge = true
+                        if editingChallenge == nil {
+                            isPresentingNewChallenge = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .foregroundColor(.white)
@@ -73,7 +75,7 @@ struct ChallengeHomeView: View {
             )) {
                 NavigationView {
                     List {
-                        ForEach(showingParticipants, id: \ .self) { participant in
+                        ForEach(showingParticipants, id: \.self) { participant in
                             Text(participant)
                         }
                     }
@@ -89,6 +91,8 @@ struct ChallengeHomeView: View {
             }
         }
     }
+
+    // MARK: - UI Sections
 
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -122,7 +126,7 @@ struct ChallengeHomeView: View {
     private var challengesList: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                ForEach(viewModel.challenges, id: \ .id) { challenge in
+                ForEach(viewModel.challenges, id: \.id) { challenge in
                     challengeCard(for: challenge)
                 }
             }

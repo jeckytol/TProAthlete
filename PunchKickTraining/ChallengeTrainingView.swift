@@ -4,6 +4,7 @@ import AVFoundation
 struct ChallengeTrainingView: View {
     let challenge: Challenge
     let training: SavedTraining
+    let runId: String  // ✅ This line ensures the shared runId is used
 
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var userProfileManager: UserProfileManager
@@ -26,7 +27,6 @@ struct ChallengeTrainingView: View {
     var nickname: String { userProfileManager.profile?.nickname ?? "Unknown" }
     var avatarName: String { userProfileManager.profile?.avatarName ?? "defaultAvatar" }
 
-    var runId: String { challenge.runId ?? "default-run" }
 
     var sortedProgress: [ChallengeProgress] {
         progressManager.allProgress

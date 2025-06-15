@@ -13,12 +13,15 @@ struct ChallengeWaitingRoomView: View {
     @State private var matchedTraining: SavedTraining? = nil
     @State private var isDownloading = false
 
+    @State private var runId: String? = nil
+    @State private var hasStarted = false
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if isChallengeStarted, let training = matchedTraining {
-                ChallengeTrainingView(challenge: challenge, training: training)
+            if isChallengeStarted, let training = matchedTraining, let resolvedRunId = runId {
+                ChallengeTrainingView(challenge: challenge, training: training, runId: resolvedRunId)
                     .environmentObject(bluetoothManager)
                     .onAppear {
                         bluetoothManager.sessionManager?.startNewSession(with: training.rounds)
@@ -87,6 +90,7 @@ struct ChallengeWaitingRoomView: View {
         .onAppear {
             fetchParticipants()
             findOrDownloadTraining()
+            resolveRunIdIfNeeded()
             startCountdown()
         }
         .onDisappear {
@@ -116,7 +120,6 @@ struct ChallengeWaitingRoomView: View {
             return
         }
 
-        // Try to download from Firestore
         isDownloading = true
         let db = Firestore.firestore()
         db.collection("public_trainings")
@@ -149,6 +152,40 @@ struct ChallengeWaitingRoomView: View {
             }
     }
 
+    private func resolveRunIdIfNeeded() {
+        guard runId == nil else { return }
+
+        let db = Firestore.firestore()
+        let docRef = db.collection("challenges").document(challenge.id)
+
+        docRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error fetching runId: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = snapshot?.data() else { return }
+
+            if let existingRunId = data["runId"] as? String {
+                print("📥 Using existing runId: \(existingRunId)")
+                runId = existingRunId
+            } else {
+                // Generate and persist a new runId
+                let newRunId = UUID().uuidString
+                print("🚀 Creating and saving new runId: \(newRunId)")
+                runId = newRunId
+
+                docRef.updateData(["runId": newRunId]) { err in
+                    if let err = err {
+                        print("❌ Failed to save runId: \(err.localizedDescription)")
+                    } else {
+                        print("✅ runId saved to Firestore")
+                    }
+                }
+            }
+        }
+    }
+
     private func startCountdown() {
         let now = Date()
         timeRemaining = max(challenge.startTime.timeIntervalSince(now), 0)
@@ -167,7 +204,6 @@ struct ChallengeWaitingRoomView: View {
         }
     }
 
-    // Helper to format time
     private func formattedTime(from interval: TimeInterval) -> String {
         let seconds = Int(interval)
         let minutes = seconds / 60
