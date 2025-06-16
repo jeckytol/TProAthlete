@@ -9,22 +9,26 @@ struct RootLauncherView: View {
 
     var body: some View {
         ZStack {
-            // Background view logic (post-loading)
             if !profileManager.isLoading && hasMinimumDelayPassed {
                 if profileManager.profile == nil {
+                    // User hasn't set up their profile yet
                     UserProfileView(profileManager: profileManager)
                         .transition(.opacity)
                 } else if let training = selectedTraining {
+                    // A training was launched from somewhere
                     ContentView(training: training, selectedTraining: $selectedTraining)
+                        .environmentObject(bluetoothManager)
+                        .environmentObject(profileManager)
                         .transition(.opacity)
                 } else {
-                    HomeScreen(selectedTraining: $selectedTraining)
+                    // Default path — go to 2x2 function selector
+                    FunctionOptionsView()
                         .environmentObject(bluetoothManager)
+                        .environmentObject(profileManager)
                         .transition(.opacity)
                 }
             }
 
-            // Loading overlay
             if profileManager.isLoading || !hasMinimumDelayPassed {
                 LoadingView()
                     .transition(.opacity)
@@ -34,6 +38,7 @@ struct RootLauncherView: View {
         .onAppear {
             profileManager.loadProfile()
 
+            // Ensure minimum splash time
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 hasMinimumDelayPassed = true
             }

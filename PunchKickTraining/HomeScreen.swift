@@ -28,22 +28,19 @@ struct HomeScreen: View {
     @State private var navigationIntent: NavigationIntent? = nil
     @AppStorage("nickname") private var nickname: String = ""
     @State private var isShowingDownloadModal = false
-    @State private var isShowingChallengeModal = false
 
     var body: some View {
         NavigationView {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                //VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Your Dopa Trainings")
                         .font(.largeTitle.bold())
                         .foregroundColor(.white)
                         .padding(.horizontal)
                         .padding(.top, 10)
-                        //.padding(.bottom, 12)
-                    
+
                     Divider()
                         .background(Color.gray)
                         .padding(.bottom, 8)
@@ -122,43 +119,29 @@ struct HomeScreen: View {
                         }
                     }
 
-                    VStack(spacing: 12) {
-                        HStack(spacing: 20) {
-                            Button(action: {
-                                navigationIntent = .creating
-                            }) {
-                                Label("New Training", systemImage: "plus.circle.fill")
-                                    .fontWeight(.bold)
-                                    .padding(10)
-                                    .frame(maxWidth: .infinity)
-                                    .foregroundColor(.white)
-                                    .background(Color.black)
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue, lineWidth: 2))
-                            }
-
-                            Button(action: {
-                                isShowingDownloadModal = true
-                            }) {
-                                Label("Download", systemImage: "arrow.down.circle")
-                                    .fontWeight(.bold)
-                                    .padding(10)
-                                    .frame(maxWidth: .infinity)
-                                    .foregroundColor(.white)
-                                    .background(Color.black)
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange, lineWidth: 2))
-                            }
-                        }
-
+                    HStack(spacing: 20) {
                         Button(action: {
-                            isShowingChallengeModal = true
+                            navigationIntent = .creating
                         }) {
-                            Label("Challenge", systemImage: "flag.checkered")
+                            Label("New Training", systemImage: "plus.circle.fill")
                                 .fontWeight(.bold)
                                 .padding(10)
                                 .frame(maxWidth: .infinity)
                                 .foregroundColor(.white)
                                 .background(Color.black)
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.purple, lineWidth: 2))
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue, lineWidth: 2))
+                        }
+
+                        Button(action: {
+                            isShowingDownloadModal = true
+                        }) {
+                            Label("Download", systemImage: "arrow.down.circle")
+                                .fontWeight(.bold)
+                                .padding(10)
+                                .frame(maxWidth: .infinity)
+                                .foregroundColor(.white)
+                                .background(Color.black)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange, lineWidth: 2))
                         }
                     }
                     .padding(.horizontal)
@@ -182,15 +165,9 @@ struct HomeScreen: View {
             .sheet(isPresented: $isShowingDownloadModal) {
                 DownloadPublicTrainingsView(onDownload: handleDownloadedPublicTraining)
             }
-            .sheet(isPresented: $isShowingChallengeModal) {
-                ChallengeHomeView()
-                    .environmentObject(bluetoothManager)
-            }
         }
     }
 
-   
-    //---
     private func handleSave(_ saved: SavedTraining) {
         trainings.removeAll { $0.id == saved.id }
         trainings.append(saved)
@@ -198,7 +175,6 @@ struct HomeScreen: View {
         SavedTraining.saveAll(trainings)
         navigationIntent = nil
     }
-    //---
 
     private func deleteTraining(_ training: SavedTraining) {
         trainings.removeAll { $0.id == training.id }
