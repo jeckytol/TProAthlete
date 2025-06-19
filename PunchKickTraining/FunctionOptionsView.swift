@@ -2,11 +2,11 @@ import SwiftUI
 import AVKit
 
 struct FunctionOptionsView: View {
+    @Binding var selectedTraining: SavedTraining?
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var userProfileManager: UserProfileManager
 
     @State private var animateBoxes = false
-    @State private var selectedTraining: SavedTraining? = nil
 
     var body: some View {
         NavigationStack {
@@ -14,26 +14,24 @@ struct FunctionOptionsView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 24) {
-                    Text("Dopamineo Menu")
+                    Text("Dopamineo")
                         .font(.largeTitle.bold())
                         .foregroundColor(.white)
                         .padding(.top, 20)
 
                     GeometryReader { geo in
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 24) {
                             optionBox(
                                 title: "Learning",
-                                icon: "book.fill",
-                                color: .orange,
-                                height: geo.size.height * 0.22,
+                                imageName: "learning",
+                                height: geo.size.height * 0.26,
                                 destination: LearningView()
                             )
 
                             optionBox(
                                 title: "Trainings",
-                                icon: "figure.strengthtraining.traditional",
-                                color: .blue,
-                                height: geo.size.height * 0.22,
+                                imageName: "training",
+                                height: geo.size.height * 0.26,
                                 destination:
                                     HomeScreen(selectedTraining: $selectedTraining)
                                         .environmentObject(bluetoothManager)
@@ -42,9 +40,8 @@ struct FunctionOptionsView: View {
 
                             optionBox(
                                 title: "Challenges",
-                                icon: "flame.fill",
-                                color: .red,
-                                height: geo.size.height * 0.22,
+                                imageName: "challenge",
+                                height: geo.size.height * 0.26,
                                 destination:
                                     ChallengeHomeView()
                                         .environmentObject(bluetoothManager)
@@ -53,9 +50,8 @@ struct FunctionOptionsView: View {
 
                             optionBox(
                                 title: "Activity Dashboard",
-                                icon: "chart.bar.fill",
-                                color: .green,
-                                height: geo.size.height * 0.22,
+                                imageName: "activity",
+                                height: geo.size.height * 0.26,
                                 destination: ActivityDashboardView()
                             )
                         }
@@ -74,30 +70,30 @@ struct FunctionOptionsView: View {
         }
     }
 
-    // MARK: - Reusable Box
+    // MARK: - Reusable Box with Enlarged Image
     private func optionBox<Destination: View>(
         title: String,
-        icon: String,
-        color: Color,
+        imageName: String,
         height: CGFloat,
         destination: Destination
     ) -> some View {
         NavigationLink(destination: destination) {
             VStack(spacing: 16) {
-                Image(systemName: icon)
+                Image(imageName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(color)
+                    .frame(height: height * 0.6)
+                    .padding(.top, 10)
 
                 Text(title)
                     .foregroundColor(.white)
                     .font(.headline)
+                    .padding(.bottom, 10)
             }
             .frame(maxWidth: .infinity, minHeight: height)
             .background(Color.gray.opacity(0.2))
-            .cornerRadius(20)
-            .shadow(color: color.opacity(0.4), radius: 10, x: 0, y: 5)
+            .cornerRadius(24)
+            .shadow(color: .white.opacity(0.1), radius: 10, x: 0, y: 5)
         }
     }
 }

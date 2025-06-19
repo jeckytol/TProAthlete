@@ -22,7 +22,8 @@ struct RootLauncherView: View {
                         .transition(.opacity)
                 } else {
                     // Default path — go to 2x2 function selector
-                    FunctionOptionsView()
+                    //FunctionOptionsView()
+                    FunctionOptionsView(selectedTraining: $selectedTraining)
                         .environmentObject(bluetoothManager)
                         .environmentObject(profileManager)
                         .transition(.opacity)

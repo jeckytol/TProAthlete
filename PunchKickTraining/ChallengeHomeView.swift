@@ -28,7 +28,7 @@ struct ChallengeHomeView: View {
 
                     if viewModel.isLoading {
                         loadingView
-                    } else if viewModel.challenges.isEmpty {
+                    } else if viewModel.activeChallenges.isEmpty && viewModel.pastChallenges.isEmpty {
                         emptyState
                     } else {
                         challengesList
@@ -117,7 +117,7 @@ struct ChallengeHomeView: View {
     private var emptyState: some View {
         VStack {
             Spacer()
-            Text("No upcoming challenges.")
+            Text("No upcoming or recent challenges.")
                 .foregroundColor(.gray)
             Spacer()
         }
@@ -126,101 +126,130 @@ struct ChallengeHomeView: View {
     private var challengesList: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                ForEach(viewModel.challenges, id: \.id) { challenge in
-                    challengeCard(for: challenge)
+                if !viewModel.activeChallenges.isEmpty {
+                    ForEach(viewModel.activeChallenges, id: \.id) { challenge in
+                        challengeCard(for: challenge, isPast: false)
+                    }
+                }
+
+                if !viewModel.pastChallenges.isEmpty {
+                    Divider().background(Color.gray).padding(.top, 12)
+
+                    ForEach(viewModel.pastChallenges, id: \.id) { challenge in
+                        challengeCard(for: challenge, isPast: true)
+                    }
                 }
             }
             .padding()
         }
     }
 
-    private func challengeCard(for challenge: Challenge) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(challenge.challengeName)
-                .foregroundColor(viewModel.isRegistered(challenge) ? .green : .white)
-                .bold()
+    
+    //------
+    
+    
+    private func challengeCard(for challenge: Challenge, isPast: Bool) -> some View {
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(challenge.challengeName)
+                    .foregroundColor(viewModel.isRegistered(challenge) ? .green : .white)
+                    .bold()
 
-            HStack {
-                Text("By: \(challenge.creatorNickname)")
-                    .foregroundColor(.gray)
-                Spacer()
-                Text(String(repeating: "★", count: challenge.difficulty))
-                    .foregroundColor(.gray)
-            }
-
-            Text("Training: \(challenge.trainingName)")
-                .foregroundColor(.white)
-
-            if !challenge.comment.isEmpty {
-                Text(viewModel.truncatedComment(challenge.comment))
-                    .foregroundColor(.white)
-                    .italic()
-                    .onTapGesture {
-                        showingComment = IdentifiableString(value: challenge.comment)
-                    }
-            }
-
-            HStack {
-                if challenge.startTime > Date() {
-                    Button(viewModel.isRegistered(challenge) ? "Unregister" : "Register") {
-                        viewModel.toggleRegistration(for: challenge)
-                    }
-                    .foregroundColor(.white)
-                    .padding(6)
-                    .background(Color.gray.opacity(0.3))
-                    .cornerRadius(6)
+                HStack {
+                    Text("By: \(challenge.creatorNickname)")
+                        .foregroundColor(.gray)
+                    Spacer()
+                    Text(String(repeating: "★", count: challenge.difficulty))
+                        .foregroundColor(.gray)
                 }
 
-                Spacer()
-
-                Button {
-                    showingParticipants = challenge.registeredNicknames
-                } label: {
-                    HStack {
-                        Image(systemName: "person.2.fill")
-                        Text("\(challenge.registeredNicknames.count)")
-                    }
-                    .foregroundColor(.gray)
-                }
-            }
-
-            HStack {
-                if viewModel.canEnterWaitingRoom(for: challenge) {
-                    Button("Enter Waiting Room") {
-                        selectedChallenge = challenge
-                    }
-                    .font(.caption)
-                    .padding(6)
+                Text("Training: \(challenge.trainingName)")
                     .foregroundColor(.white)
-                    .background(Color.blue)
-                    .cornerRadius(6)
+
+                if !challenge.comment.isEmpty {
+                    Text(viewModel.truncatedComment(challenge.comment))
+                        .foregroundColor(.white)
+                        .italic()
+                        .onTapGesture {
+                            showingComment = IdentifiableString(value: challenge.comment)
+                        }
                 }
 
-                Spacer()
-
-                if challenge.creatorNickname == nickname {
-                    Button {
-                        editingChallenge = challenge
-                    } label: {
-                        Image(systemName: "pencil")
-                            .foregroundColor(.gray)
+                HStack {
+                    if !isPast && challenge.startTime > Date() {
+                        Button(viewModel.isRegistered(challenge) ? "Unregister" : "Register") {
+                            viewModel.toggleRegistration(for: challenge)
+                        }
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Color.gray.opacity(0.3))
+                        .cornerRadius(6)
                     }
+
+                    Spacer()
 
                     Button {
-                        viewModel.deleteChallenge(challenge)
+                        showingParticipants = challenge.registeredNicknames
                     } label: {
-                        Image(systemName: "trash")
-                            .foregroundColor(.gray)
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                            Text("\(challenge.registeredNicknames.count)")
+                        }
+                        .foregroundColor(.gray)
                     }
                 }
-            }
 
-            Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
-                .foregroundColor(.gray)
-                .font(.footnote)
+                HStack {
+                    if !isPast && viewModel.canEnterWaitingRoom(for: challenge) {
+                        Button("Enter Waiting Room") {
+                            selectedChallenge = challenge
+                        }
+                        .font(.caption)
+                        .padding(6)
+                        .foregroundColor(.white)
+                        .background(Color.blue)
+                        .cornerRadius(6)
+                    }
+
+                    Spacer()
+
+                    if !isPast && challenge.creatorNickname == nickname {
+                        Button {
+                            editingChallenge = challenge
+                        } label: {
+                            Image(systemName: "pencil")
+                                .foregroundColor(.gray)
+                        }
+
+                        Button {
+                            viewModel.deleteChallenge(challenge)
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+
+                Text(challenge.startTime.formatted(date: .abbreviated, time: .shortened))
+                    .foregroundColor(.gray)
+                    .font(.footnote)
+            }
+            .padding()
+            .background(Color.gray.opacity(isPast ? 0.1 : 0.2))
+            .cornerRadius(12)
+            .opacity(isPast ? 0.5 : 1.0)
+            .disabled(isPast)
+
+            // Watermark overlay for past challenges
+            if isPast {
+                Text("ACCOMPLISHED")
+                    .font(.system(size: 32, weight: .black))
+                    .foregroundColor(.white.opacity(0.1))
+                    .rotationEffect(.degrees(-30))
+                    .offset(x: 10, y: 0)
+            }
         }
-        .padding()
-        .background(Color.gray.opacity(0.2))
-        .cornerRadius(12)
     }
+    
+    //--------
 }
