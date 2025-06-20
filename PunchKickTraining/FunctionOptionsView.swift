@@ -25,7 +25,9 @@ struct FunctionOptionsView: View {
                                 title: "Learning",
                                 imageName: "learning",
                                 height: geo.size.height * 0.26,
-                                destination: LearningView()
+                                destination:
+                                    LearningView()
+                                        .environmentObject(ExerciseManager())
                             )
 
                             optionBox(
@@ -98,18 +100,7 @@ struct FunctionOptionsView: View {
     }
 }
 
-// MARK: - Placeholder Views
-
-struct LearningView: View {
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            Text("Learning Materials Coming Soon")
-                .foregroundColor(.white)
-        }
-        .navigationTitle("Learning")
-    }
-}
+// MARK: - Placeholder View
 
 struct ActivityDashboardView: View {
     var body: some View {
