@@ -12,6 +12,8 @@ struct TrainingEditorView: View {
     @State private var rounds: [TrainingRound] = []
     @State private var isPublic: Bool = false
     @State private var classification: TrainingClassification = .medium
+    @State private var exercises: [Exercise] = []
+    @State private var selectedVideoURL: URL? = nil
 
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -26,7 +28,6 @@ struct TrainingEditorView: View {
                         Text(initialTraining == nil ? "New Training" : "Edit Training")
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                            //.padding(.horizontal)
                             .padding(.top, 10)
 
                         Divider().background(Color.gray.opacity(0.3))
@@ -84,15 +85,29 @@ struct TrainingEditorView: View {
                                             .foregroundColor(.gray)
                                         Spacer()
                                         Picker("Exercise", selection: $rounds[index].name) {
-                                            ForEach(predefinedExercises, id: \.self) { exercise in
+                                            ForEach(exercises.map { $0.name }, id: \.self) { exercise in
                                                 Text(exercise)
                                             }
+                                        }
+                                        .onChange(of: rounds[index].name) { _ in
+                                            // video will be updated from selected name
                                         }
                                         .pickerStyle(MenuPickerStyle())
                                         .padding(8)
                                         .background(Color.gray.opacity(0.2))
                                         .cornerRadius(8)
                                         .foregroundColor(.blue)
+                                    }
+
+                                    if let urlString = exercises.first(where: { $0.name == rounds[index].name })?.videoUrl,
+                                       let url = URL(string: urlString) {
+                                        Button(action: {
+                                            selectedVideoURL = url
+                                        }) {
+                                            Text("▶️ Watch Video")
+                                                .font(.caption)
+                                                .foregroundColor(.blue)
+                                        }
                                     }
 
                                     HStack {
@@ -129,7 +144,7 @@ struct TrainingEditorView: View {
                             }
 
                             Button(action: {
-                                rounds.append(TrainingRound(name: predefinedExercises.first ?? "New Round", goalForce: 1000))
+                                rounds.append(TrainingRound(name: exercises.first?.name ?? "New Round", goalForce: 1000))
                             }) {
                                 Label("Add Round", systemImage: "plus.circle")
                                     .foregroundColor(.gray)
@@ -145,7 +160,6 @@ struct TrainingEditorView: View {
                     .padding()
                 }
 
-                // Save button pinned at the bottom
                 Button(action: saveTraining) {
                     Text("Save")
                         .font(.footnote.bold())
@@ -162,8 +176,15 @@ struct TrainingEditorView: View {
                 }
                 .disabled(!isSaveEnabled)
             }
+
+            if let url = selectedVideoURL {
+                VideoOverlayView(url: url) {
+                    selectedVideoURL = nil
+                }
+            }
         }
         .onAppear {
+            fetchExercises()
             if let training = initialTraining {
                 self.name = training.name
                 self.rounds = training.rounds
@@ -181,6 +202,21 @@ struct TrainingEditorView: View {
 
     private var isSaveEnabled: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && !rounds.isEmpty && nickname != "Unknown"
+    }
+
+    private func fetchExercises() {
+        let db = Firestore.firestore()
+        db.collection("exercises").order(by: "createdAt", descending: true).getDocuments { snapshot, error in
+            if let error = error {
+                alertMessage = "Failed to load exercises: \(error.localizedDescription)"
+                showAlert = true
+                return
+            }
+
+            if let documents = snapshot?.documents {
+                self.exercises = documents.compactMap { try? $0.data(as: Exercise.self) }
+            }
+        }
     }
 
     private func saveTraining() {

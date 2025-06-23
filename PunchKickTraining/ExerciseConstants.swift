@@ -15,3 +15,4 @@ let predefinedExercises: [String] = [
     "Kettlebell Swing",
     "Dumbbell Snatch"
 ]
+
