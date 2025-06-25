@@ -56,6 +56,21 @@ struct FunctionOptionsView: View {
                                 height: geo.size.height * 0.26,
                                 destination: ActivityDashboardView()
                             )
+
+                            optionBox(
+                                title: "Records",
+                                imageName: "records",
+                                height: geo.size.height * 0.26,
+                                destination: RecordsView(),
+                                scale: 1.1 // <- Enlarged image scale
+                            )
+
+                            optionBox(
+                                title: "Prizes",
+                                imageName: "prize",
+                                height: geo.size.height * 0.26,
+                                destination: PrizesView()
+                            )
                         }
                         .padding(.horizontal)
                         .scaleEffect(animateBoxes ? 1.0 : 0.6)
@@ -72,12 +87,13 @@ struct FunctionOptionsView: View {
         }
     }
 
-    // MARK: - Reusable Box with Enlarged Image
+    // MARK: - Reusable Box with Optional Scale for Image
     private func optionBox<Destination: View>(
         title: String,
         imageName: String,
         height: CGFloat,
-        destination: Destination
+        destination: Destination,
+        scale: CGFloat = 1.0
     ) -> some View {
         NavigationLink(destination: destination) {
             VStack(spacing: 16) {
@@ -85,6 +101,7 @@ struct FunctionOptionsView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(height: height * 0.6)
+                    .scaleEffect(scale)
                     .padding(.top, 10)
 
                 Text(title)
@@ -100,7 +117,7 @@ struct FunctionOptionsView: View {
     }
 }
 
-// MARK: - Placeholder View
+// MARK: - Placeholder Views
 
 struct ActivityDashboardView: View {
     var body: some View {
@@ -110,5 +127,27 @@ struct ActivityDashboardView: View {
                 .foregroundColor(.white)
         }
         .navigationTitle("Dashboard")
+    }
+}
+
+struct RecordsView: View {
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            Text("Records Coming Soon")
+                .foregroundColor(.white)
+        }
+        .navigationTitle("Records")
+    }
+}
+
+struct PrizesView: View {
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            Text("Prizes Coming Soon")
+                .foregroundColor(.white)
+        }
+        .navigationTitle("Prizes")
     }
 }
