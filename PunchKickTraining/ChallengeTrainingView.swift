@@ -243,6 +243,7 @@ struct ChallengeTrainingView: View {
                     avatarName: avatarName,
                     totalForce: bluetoothManager.totalForce,
                     totalStrikes: bluetoothManager.totalStrikes,
+                    totalPoints: bluetoothManager.totalPoints,
                     isDisqualified: false,
                     roundName: sessionManager.currentRoundName,
                     roundNumber: sessionManager.roundNumber,
@@ -273,6 +274,7 @@ struct ChallengeTrainingView: View {
             strikeCount: bluetoothManager.totalStrikes,
             trainingGoalForce: training.rounds.map { $0.goalForce }.reduce(0.0, +),
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
+            totalPoints: bluetoothManager.totalPoints,
             nickname: nickname
         )
 

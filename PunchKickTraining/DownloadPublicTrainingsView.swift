@@ -148,6 +148,8 @@ struct DownloadPublicTrainingsView: View {
 
                     let creationDate = timestamp.dateValue()
 
+                    //------------
+                    
                     let rounds: [TrainingRound] = roundsData.compactMap { roundDict in
                         guard
                             let name = roundDict["name"] as? String,
@@ -155,9 +157,17 @@ struct DownloadPublicTrainingsView: View {
                         else {
                             return nil
                         }
-                        let cutoff = (roundDict["cutoffTime"] as? Double).map { Int($0) }
-                        return TrainingRound(name: name, goalForce: goalForce, cutoffTime: cutoff)
+
+                        let cutoffTime = roundDict["cutoffTime"] as? Int
+
+                        return TrainingRound(
+                            name: name,
+                            goalForce: goalForce,
+                            cutoffTime: cutoffTime
+                        )
                     }
+                    
+                    //--------------
 
                     let key = DownloadedTrainingKey(name: name, creator: creator, roundCount: rounds.count, creationDate: creationDate)
                     if downloadedTrainings.contains(key) {

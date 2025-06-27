@@ -23,6 +23,6 @@ struct TrainingSummary: Codable, Identifiable {
     var strikeCount: Int
     var trainingGoalForce: Double
     var trainingGoalCompletionPercentage: Double
-    
+    var totalPoints: Double
     var nickname: String
 }

@@ -72,6 +72,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     @Published var currentForcePercentage: Double = 0.0
     @Published var sumForceInRound: Double = 0.0
     @Published var strikeCountInRound: Int = 0
+    @Published var totalPoints: Double = 0.0
 
     private var lastAxisDirection: [String: Double] = [:]
     private var motionStartTime: Date? = nil
@@ -183,72 +184,80 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         }
     }
 
+    //-----
     // MARK: - Motion Logic
-    func processMotion(x: Double, y: Double, z: Double) {
-        let now = Date()
-        let currentVector = SIMD3<Double>(x, y, z)
-        let magnitude = simd_length(currentVector)
-        let settlingThreshold = accelerationThreshold * 0.9
+       func processMotion(x: Double, y: Double, z: Double) {
+           let now = Date()
+           let currentVector = SIMD3<Double>(x, y, z)
+           let magnitude = simd_length(currentVector)
+           let settlingThreshold = accelerationThreshold * 0.9
 
-        if let lastStrike = lastStrikeTime,
-           now.timeIntervalSince(lastStrike) < postStrikeCooldown {
-            return
-        }
+           if let lastStrike = lastStrikeTime,
+              now.timeIntervalSince(lastStrike) < postStrikeCooldown {
+               return
+           }
 
-        if waitingForMotionToSettle {
-            if magnitude < settlingThreshold {
-                waitingForMotionToSettle = false
-                print("[Motion Settled] Magnitude dropped to \(String(format: "%.2f", magnitude)) < \(String(format: "%.2f", settlingThreshold))")
-            }
-            return
-        }
+           if waitingForMotionToSettle {
+               if magnitude < settlingThreshold {
+                   waitingForMotionToSettle = false
+                   print("[Motion Settled] Magnitude dropped to \(String(format: "%.2f", magnitude)) < \(String(format: "%.2f", settlingThreshold))")
+               }
+               return
+           }
 
-        if !isMovementActive {
-            if magnitude >= settlingThreshold {
-                currentMotionStartTime = now
-                currentMotionMagnitudes = [magnitude]
-                motionStartVector = currentVector
-                isMovementActive = true
-            }
-            return
-        }
+           if !isMovementActive {
+               if magnitude >= settlingThreshold {
+                   currentMotionStartTime = now
+                   currentMotionMagnitudes = [magnitude]
+                   motionStartVector = currentVector
+                   isMovementActive = true
+               }
+               return
+           }
 
-        currentMotionMagnitudes.append(magnitude)
-        let duration = now.timeIntervalSince(currentMotionStartTime ?? now)
-        let maxMagnitude = currentMotionMagnitudes.max() ?? 0.0
+           currentMotionMagnitudes.append(magnitude)
+           let duration = now.timeIntervalSince(currentMotionStartTime ?? now)
+           let maxMagnitude = currentMotionMagnitudes.max() ?? 0.0
 
-        print("""
-        [Motion Check - Vector]
-        Duration: \(String(format: "%.3f", duration))s
-        Max Magnitude: \(String(format: "%.2f", maxMagnitude))
-        Threshold: \(accelerationThreshold)
-        """)
+           print("""
+           [Motion Check - Vector]
+           Duration: \(String(format: "%.3f", duration))s
+           Max Magnitude: \(String(format: "%.2f", maxMagnitude))
+           Threshold: \(accelerationThreshold)
+           """)
 
-        if duration >= 2.0, maxMagnitude < accelerationThreshold {
-            print("[Motion Auto-Reset] Idle motion for \(String(format: "%.2f", duration))s with max \(String(format: "%.2f", maxMagnitude))")
-            isMovementActive = false
-            currentMotionStartTime = nil
-            currentMotionMagnitudes = []
-            motionStartVector = nil
-            return
-        }
+           if duration >= 2.0, maxMagnitude < accelerationThreshold {
+               print("[Motion Auto-Reset] Idle motion for \(String(format: "%.2f", duration))s with max \(String(format: "%.2f", maxMagnitude))")
+               isMovementActive = false
+               currentMotionStartTime = nil
+               currentMotionMagnitudes = []
+               motionStartVector = nil
+               return
+           }
 
-        if duration >= minMotionDuration, maxMagnitude >= accelerationThreshold {
-            let averageMagnitude = currentMotionMagnitudes.reduce(0.0, +) / Double(currentMotionMagnitudes.count)
-            let force = averageMagnitude * duration * 9.81 * 3.0
-            print("[*** New Strike ***] Force: \(String(format: "%.2f", force))N")
-            simulateStrike(force: force)
+           if duration >= minMotionDuration, maxMagnitude >= accelerationThreshold {
+               let averageMagnitude = currentMotionMagnitudes.reduce(0.0, +) / Double(currentMotionMagnitudes.count)
+               let force = averageMagnitude * duration * 9.81 * 3.0
+               print("[*** New Strike ***] Force: \(String(format: "%.2f", force))N")
+               simulateStrike(force: force)
 
-            lastStrikeTime = now
-            isMovementActive = false
-            currentMotionStartTime = nil
-            currentMotionMagnitudes = []
-            motionStartVector = nil
-            waitingForMotionToSettle = true
-        }
-    }
-
+               lastStrikeTime = now
+               isMovementActive = false
+               currentMotionStartTime = nil
+               currentMotionMagnitudes = []
+               motionStartVector = nil
+               waitingForMotionToSettle = true
+           }
+       }
+    
+    
+    //----
+    
+    
+    
     // MARK: - Strike Handling
+    //----
+    
     private func simulateStrike(force: Double) {
         guard isTrainingActive else { return }
 
@@ -260,6 +269,17 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         if force > maxForce { maxForce = force }
         averageForce = totalStrikes > 0 ? (totalForce / Double(totalStrikes)) : 0
         currentForce = force
+
+        // ✅ Calculate points using pointsFactor from exercise (not round)
+        if let currentRoundName = sessionManager?.currentRound?.name,
+           let exercise = ExerciseManager.shared.getExercise(named: currentRoundName) {
+            let addedPoints = force * exercise.pointsFactor
+            print("[Points Calculation] Round: \(currentRoundName), Factor: \(exercise.pointsFactor), Force: \(force), Added: \(addedPoints)")
+            totalPoints += addedPoints
+        }
+        else {
+        print("❌ Failed to get exercise for round: \(sessionManager?.currentRound?.name ?? "nil")")
+        }
 
         if let currentGoal = sessionManager?.currentRoundGoal, currentGoal > 0 {
             currentForcePercentage = min((sumForceInRound / currentGoal) * 100.0, 100.0)
@@ -275,6 +295,8 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             stopTrainingCallback?()
         }
     }
+    
+    //------
 
     var trainingProgressPercentage: Double {
         guard let sessionManager = sessionManager, !sessionManager.rounds.isEmpty else { return 0.0 }
@@ -292,6 +314,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         currentForcePercentage = 0.0
         sumForceInRound = 0.0
         strikeCountInRound = 0
+        totalPoints = 0.0
         lastAxisDirection = [:]
         motionStartTime = nil
     }
@@ -329,4 +352,3 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         )
     }
 }
-

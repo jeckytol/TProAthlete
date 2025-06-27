@@ -187,6 +187,8 @@ struct NewChallengeView: View {
         }
     }
 
+    //-------
+    
     private func fetchPublicTrainings() {
         let db = Firestore.firestore()
         db.collection("public_trainings").getDocuments { snapshot, error in
@@ -205,11 +207,20 @@ struct NewChallengeView: View {
                     return nil
                 }
 
-                let rounds = roundsData.compactMap { dict -> TrainingRound? in
-                    guard let name = dict["name"] as? String,
-                          let goal = dict["goalForce"] as? Double else { return nil }
-                    let cutoff = (dict["cutoffTime"] as? Double).map { Int($0) }
-                    return TrainingRound(name: name, goalForce: goal, cutoffTime: cutoff)
+                let rounds: [TrainingRound] = roundsData.compactMap { dict in
+                    guard let roundName = dict["name"] as? String,
+                          let goalForce = dict["goalForce"] as? Double else {
+                        return nil
+                    }
+
+                    let cutoffTime = (dict["cutoffTime"] as? Double).map { Int($0) }
+                    let pointsFactor = dict["pointsFactor"] as? Double ?? 1.0
+
+                    return TrainingRound(
+                        name: roundName,
+                        goalForce: goalForce,
+                        cutoffTime: cutoffTime
+                    )
                 }
 
                 return SavedTraining(
@@ -230,6 +241,8 @@ struct NewChallengeView: View {
             }
         }
     }
+    
+    //--------
 
     private func totalForce(of training: SavedTraining) -> Int {
         training.rounds.reduce(0) { $0 + Int($1.goalForce) }

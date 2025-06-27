@@ -21,6 +21,7 @@ struct ChallengeProgress: Codable, Identifiable {
 
     var totalForce: Double       // Accumulated force
     var totalStrikes: Int        // Count of strikes
+    var totalPoints: Double 
     var isDisqualified: Bool
 
     var roundName: String        // Name of the current round

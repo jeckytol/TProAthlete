@@ -1,7 +1,8 @@
 import SwiftUI
 
+
 struct LearningView: View {
-    @StateObject private var manager = ExerciseManager()
+    @StateObject private var manager = ExerciseManager.shared
     @State private var selectedVideoURL: URL?
     @State private var editingExercise: Exercise? = nil
     @State private var draftExercise = Exercise(
