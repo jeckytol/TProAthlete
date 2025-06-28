@@ -119,16 +119,7 @@ struct FunctionOptionsView: View {
 
 // MARK: - Placeholder Views
 
-struct ActivityDashboardView: View {
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            Text("Activity Dashboard Coming Soon")
-                .foregroundColor(.white)
-        }
-        .navigationTitle("Dashboard")
-    }
-}
+
 
 struct RecordsView: View {
     var body: some View {
