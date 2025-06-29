@@ -62,7 +62,11 @@ struct LearningView: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.blue.opacity(0.8))
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue, lineWidth: 2)
+                        )
                         .cornerRadius(12)
                         .padding(.horizontal)
                 }

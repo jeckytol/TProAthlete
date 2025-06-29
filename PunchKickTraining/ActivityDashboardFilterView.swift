@@ -20,13 +20,13 @@ struct ActivityDashboardFilterView: View {
                     HStack {
                         TextField("Days", value: $viewModel.timeRangeInDays, formatter: NumberFormatter())
                             .keyboardType(.numberPad)
-                            .foregroundColor(.white)
+                            .foregroundColor(.blue)
                             .focused($isTimeFieldFocused)
                             .padding(8)
                             .frame(width: 100)
                             .background(Color.black)
                             .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue))
                     }
                 }
 
@@ -50,7 +50,7 @@ struct ActivityDashboardFilterView: View {
                     isTimeFieldFocused = false // dismiss keyboard
                     viewModel.loadDashboardData()
                 }) {
-                    Text("Refresh / Calculate")
+                    Text("Calculate")
                         .foregroundColor(.blue)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
