@@ -16,8 +16,9 @@ struct ContentView: View {
     @State private var engine: CHHapticEngine?
     @State private var isShowingSettings = false
     @State private var disqualified: Bool = false
-
     @EnvironmentObject var profileManager: UserProfileManager
+
+    @State private var trainingSummaryForCertificate: TrainingSummary? = nil
 
     var body: some View {
         ZStack {
@@ -164,6 +165,9 @@ struct ContentView: View {
         .sheet(isPresented: $isShowingSettings) {
             SettingsView(bluetoothManager: bluetoothManager)
         }
+        .sheet(item: $trainingSummaryForCertificate) { summary in
+            TrainingCertificateView(summary: summary)
+        }
 
         if let countdownText = announcer.visualCountdown {
             Text(countdownText)
@@ -192,26 +196,19 @@ struct ContentView: View {
             let startCommand = ["command": "start"]
 
             if session.isReachable {
-                session.sendMessage(startCommand, replyHandler: nil) { error in
-                    print("❌ Failed to send start command to Watch: \(error.localizedDescription)")
-                }
-                print("📤 Sent start command to Watch.")
-
-                let settingsPayload: [String: Any] = [
-                    "settings": [
-                        "minMotionDuration": bluetoothManager.minMotionDuration,
-                        "postStrikeCooldown": bluetoothManager.postStrikeCooldown,
-                        "accelerationThreshold": bluetoothManager.accelerationThreshold
-                    ]
-                ]
-                session.sendMessage(settingsPayload, replyHandler: nil) { error in
-                    print("❌ Failed to send settings to Watch: \(error.localizedDescription)")
-                }
-                print("📤 Sent training settings to Watch.")
+                session.sendMessage(startCommand, replyHandler: nil, errorHandler: nil)
             } else {
-                print("⚠️ Watch is not reachable, saving pending message.")
                 WatchConnectivityManager.shared.pendingMessage = startCommand
             }
+
+            let settingsPayload: [String: Any] = [
+                "settings": [
+                    "minMotionDuration": bluetoothManager.minMotionDuration,
+                    "postStrikeCooldown": bluetoothManager.postStrikeCooldown,
+                    "accelerationThreshold": bluetoothManager.accelerationThreshold
+                ]
+            ]
+            session.sendMessage(settingsPayload, replyHandler: nil, errorHandler: nil)
         }
 
         announcer.startCountdownThenBeginTraining {
@@ -247,14 +244,9 @@ struct ContentView: View {
 
         if bluetoothManager.sensorSource == "Watch" {
             let message: [String: Any] = ["command": "stop"]
-
             if WCSession.default.isReachable {
-                WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                    print("❌ Failed to send stop command to Watch: \(error.localizedDescription)")
-                }
-                print("📤 Sent stop command to Watch.")
+                WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: nil)
             } else {
-                print("⚠️ Watch not reachable. Stop command will be sent later.")
                 WatchConnectivityManager.shared.pendingMessage = message
             }
         }
@@ -275,7 +267,9 @@ struct ContentView: View {
             totalPoints: bluetoothManager.totalPoints,
             nickname: nickname
         )
-        print("[Save Summary] totalPoints: \(bluetoothManager.totalPoints)")
+
+        trainingSummaryForCertificate = summary
+
         let manager = TrainingSummaryManager()
         manager.saveSummary(summary) { result in
             switch result {
