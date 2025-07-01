@@ -10,14 +10,13 @@ struct ContentView: View {
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @StateObject private var announcer = Announcer()
     @StateObject private var sessionManager = TrainingSessionManager()
+    @EnvironmentObject var profileManager: UserProfileManager
 
     @State private var isTraining = false
     @State private var timer: Timer? = nil
     @State private var engine: CHHapticEngine?
     @State private var isShowingSettings = false
     @State private var disqualified: Bool = false
-    @EnvironmentObject var profileManager: UserProfileManager
-
     @State private var trainingSummaryForCertificate: TrainingSummary? = nil
 
     var body: some View {
@@ -27,88 +26,67 @@ struct ContentView: View {
             VStack(spacing: 16) {
                 if !isTraining {
                     HStack {
-                        Button(action: {
-                            selectedTraining = nil
-                        }) {
+                        Button(action: { selectedTraining = nil }) {
                             HStack {
                                 Image(systemName: "chevron.left")
                                 Text("Back")
-                            }
-                            .foregroundColor(Color.white)
+                            }.foregroundColor(.white)
                         }
                         Spacer()
-                    }
-                    .padding(.horizontal)
+                    }.padding(.horizontal)
                 }
 
-                // Top Status and Settings
                 HStack {
                     Circle()
                         .fill(bluetoothManager.isSensorConnected ? Color.green : Color.red)
                         .frame(width: 14, height: 14)
                     Text(bluetoothManager.connectionStatusText)
-                        .foregroundColor(Color.white)
+                        .foregroundColor(.white)
                         .font(.footnote)
-
                     Spacer()
                     Button(action: { isShowingSettings = true }) {
                         Image(systemName: "gearshape")
                             .font(.title2)
-                            .foregroundColor(Color.white)
+                            .foregroundColor(.white)
                     }
-                }
-                .padding(.horizontal)
+                }.padding(.horizontal)
 
-                // Start/Stop buttons
                 HStack(spacing: 10) {
-                    Button(action: startTraining) {
-                        Text("Start Training")
-                            .font(.headline)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 16)
-                            .frame(maxWidth: .infinity)
-                            .background(isTraining ? Color.gray : Color.green)
-                            .foregroundColor(Color.black)
-                            .cornerRadius(8)
-                    }
-                    .disabled(isTraining)
+                    Button("Start Training", action: startTraining)
+                        .disabled(isTraining)
+                        .padding()
+                        .background(isTraining ? Color.gray : Color.green)
+                        .foregroundColor(.black)
+                        .cornerRadius(8)
 
-                    Button(action: stopTraining) {
-                        Text("Stop Training")
-                            .font(.headline)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 16)
-                            .frame(maxWidth: .infinity)
-                            .background(isTraining ? Color.red : Color.gray)
-                            .foregroundColor(Color.black)
-                            .cornerRadius(8)
-                    }
-                    .disabled(!isTraining)
-                }
-                .padding(.horizontal)
+                    Button("Stop Training", action: stopTraining)
+                        .disabled(!isTraining)
+                        .padding()
+                        .background(isTraining ? Color.red : Color.gray)
+                        .foregroundColor(.black)
+                        .cornerRadius(8)
+                }.padding(.horizontal)
 
                 Text(formatTime(sessionManager.sessionElapsedTime))
                     .font(.system(size: 36, weight: .bold, design: .monospaced))
-                    .foregroundColor(Color.white)
+                    .foregroundColor(.white)
 
-                // Metrics
                 VStack(spacing: 32) {
-                    MetricCircle(title: "Training Goal %", value: String(format: "%.0f%%", bluetoothManager.trainingProgressPercentage), gaugeValue: bluetoothManager.trainingProgressPercentage / 100, gaugeColor: Color.green)
-                    MetricCircle(title: "Total Force", value: String(format: "%.0f", bluetoothManager.totalForce), gaugeValue: nil, gaugeColor: Color.blue)
-                    MetricCircle(title: "Strikes", value: String(bluetoothManager.totalStrikes), gaugeValue: nil, gaugeColor: Color.red)
+                    MetricCircle(title: "Training Goal %", value: String(format: "%.0f%%", bluetoothManager.trainingProgressPercentage), gaugeValue: bluetoothManager.trainingProgressPercentage / 100, gaugeColor: .green)
+                    MetricCircle(title: "Total Force", value: String(format: "%.0f", bluetoothManager.totalForce), gaugeValue: nil, gaugeColor: .blue)
+                    MetricCircle(title: "Strikes", value: String(bluetoothManager.totalStrikes), gaugeValue: nil, gaugeColor: .red)
                 }
 
                 Spacer()
 
-                // Round progress
                 VStack(spacing: 8) {
                     HStack {
-                        Text("Round Progress").foregroundColor(Color.white).font(.headline)
+                        Text("Round Progress").foregroundColor(.white).font(.headline)
                         Spacer()
-                        Text(sessionManager.currentRoundName).foregroundColor(Color.white).font(.subheadline)
+                        Text(sessionManager.currentRoundName).foregroundColor(.white).font(.subheadline)
                     }
                     ProgressView(value: bluetoothManager.currentForcePercentage / 100)
-                        .progressViewStyle(LinearProgressViewStyle(tint: Color.yellow))
+                        .progressViewStyle(LinearProgressViewStyle(tint: .yellow))
                         .frame(height: 12)
                 }
                 .padding()
@@ -120,65 +98,51 @@ struct ContentView: View {
             }
             .padding()
             .onAppear {
-                let manager = WatchConnectivityManager.shared
-                manager.bluetoothManager = bluetoothManager
-
                 prepareHaptics()
                 bluetoothManager.sessionManager = sessionManager
                 bluetoothManager.announcer = announcer
                 bluetoothManager.isTrainingActive = false
                 sessionManager.startNewSession(with: training.rounds)
-
                 try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.allowBluetooth, .mixWithOthers])
                 try? AVAudioSession.sharedInstance().setActive(true)
-                bluetoothManager.stopTrainingCallback = {
-                    stopTraining()
-                }
+                bluetoothManager.stopTrainingCallback = { stopTraining() }
             }
-            .onChange(of: disqualified) { oldVal, newVal in
-                if !oldVal && newVal {
-                    announcer.announceDisqualified()
-                }
+            .sheet(isPresented: $isShowingSettings) {
+                SettingsView(bluetoothManager: bluetoothManager)
             }
-            .gesture(
-                DragGesture()
-                    .onEnded { value in
-                        if value.translation.width > 100 && !isTraining {
-                            selectedTraining = nil
-                        }
-                    }
-            )
+            //-----
+            //.sheet(item: $trainingSummaryForCertificate) { summary in
+             //   TrainingCertificateView(summary: summary)
+            //}
+            //---
+            .sheet(item: $trainingSummaryForCertificate) { summary in
+                TrainingCertificatePreviewView(summary: summary)
+            }
+            
+            //----
+
+            if let countdownText = announcer.visualCountdown {
+                Text(countdownText)
+                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(radius: 10)
+                    .transition(.scale)
+            }
 
             if disqualified {
                 Text("Disqualified")
-                    .font(.system(size: 60, weight: .heavy, design: .rounded))
-                    .foregroundColor(Color.red)
+                    .font(.system(size: 60, weight: .heavy))
+                    .foregroundColor(.red)
                     .padding()
                     .background(Color.black.opacity(0.85))
                     .cornerRadius(16)
                     .scaleEffect(1.1)
-                    .shadow(color: Color.red, radius: 10)
+                    .shadow(color: .red, radius: 10)
                     .transition(.scale)
                     .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: disqualified)
             }
         }
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView(bluetoothManager: bluetoothManager)
-        }
-        .sheet(item: $trainingSummaryForCertificate) { summary in
-            TrainingCertificateView(summary: summary)
-        }
-
-        if let countdownText = announcer.visualCountdown {
-            Text(countdownText)
-                .font(.system(size: 72, weight: .bold, design: .rounded))
-                .foregroundColor(Color.white)
-                .shadow(radius: 10)
-                .transition(.scale)
-        }
     }
-
-    // MARK: - Training Controls
 
     func startTraining() {
         UIApplication.shared.isIdleTimerDisabled = true
@@ -191,26 +155,6 @@ struct ContentView: View {
 
         bluetoothManager.configureSensorSource()
 
-        if bluetoothManager.sensorSource == "Watch" {
-            let session = WCSession.default
-            let startCommand = ["command": "start"]
-
-            if session.isReachable {
-                session.sendMessage(startCommand, replyHandler: nil, errorHandler: nil)
-            } else {
-                WatchConnectivityManager.shared.pendingMessage = startCommand
-            }
-
-            let settingsPayload: [String: Any] = [
-                "settings": [
-                    "minMotionDuration": bluetoothManager.minMotionDuration,
-                    "postStrikeCooldown": bluetoothManager.postStrikeCooldown,
-                    "accelerationThreshold": bluetoothManager.accelerationThreshold
-                ]
-            ]
-            session.sendMessage(settingsPayload, replyHandler: nil, errorHandler: nil)
-        }
-
         announcer.startCountdownThenBeginTraining {
             bluetoothManager.isTrainingActive = true
             announcer.trainingStarted = true
@@ -218,8 +162,7 @@ struct ContentView: View {
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                 if announcer.trainingStarted {
                     announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
-                    let cutoff = sessionManager.currentRound?.cutoffTime ?? 0
-                    if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
+                    if let cutoff = sessionManager.currentRound?.cutoffTime, cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
                         disqualified = true
                         stopTraining()
                     }
@@ -232,26 +175,14 @@ struct ContentView: View {
 
     func stopTraining() {
         guard isTraining else { return }
-
         isTraining = false
         UIApplication.shared.isIdleTimerDisabled = false
         timer?.invalidate()
-        timer = nil
         announcer.stop()
         sessionManager.stopSessionTimer()
         bluetoothManager.isTrainingActive = false
         triggerHaptic()
 
-        if bluetoothManager.sensorSource == "Watch" {
-            let message: [String: Any] = ["command": "stop"]
-            if WCSession.default.isReachable {
-                WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: nil)
-            } else {
-                WatchConnectivityManager.shared.pendingMessage = message
-            }
-        }
-
-        let nickname = profileManager.profile?.nickname ?? "Unknown"
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
@@ -262,23 +193,14 @@ struct ContentView: View {
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
             strikeCount: bluetoothManager.totalStrikes,
-            trainingGoalForce: training.rounds.map(\.goalForce).reduce(0, +),
+            trainingGoalForce: training.rounds.map(\ .goalForce).reduce(0, +),
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,
-            nickname: nickname
+            nickname: profileManager.profile?.nickname ?? "Unknown"
         )
 
         trainingSummaryForCertificate = summary
-
-        let manager = TrainingSummaryManager()
-        manager.saveSummary(summary) { result in
-            switch result {
-            case .success:
-                print("Training summary saved.")
-            case .failure(let error):
-                print("Error saving summary: \(error.localizedDescription)")
-            }
-        }
+        TrainingSummaryManager().saveSummary(summary) { _ in }
     }
 
     func formatTime(_ seconds: Int) -> String {
@@ -300,8 +222,6 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Metric Circle
-
 struct MetricCircle: View {
     var title: String
     var value: String
@@ -311,7 +231,7 @@ struct MetricCircle: View {
     var body: some View {
         HStack(spacing: 22) {
             Text(title)
-                .foregroundColor(Color.white)
+                .foregroundColor(.white)
                 .font(.headline)
                 .frame(width: 120, alignment: .leading)
 
@@ -330,7 +250,7 @@ struct MetricCircle: View {
                 }
 
                 Text(value)
-                    .foregroundColor(Color.white)
+                    .foregroundColor(.white)
                     .font(.title2)
                     .bold()
             }
