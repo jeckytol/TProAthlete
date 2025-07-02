@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct TrainingCertificatePreviewView: View {
@@ -10,28 +9,33 @@ struct TrainingCertificatePreviewView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 30) {
                 TrainingCertificateView(summary: summary)
                     .frame(maxWidth: 350, maxHeight: 500)
-                    .background(Color.black)
-                    .cornerRadius(16)
+                    .cornerRadius(20)
 
-                Button("📤 Share Certificate") {
+                Button(action: {
                     showShareScreen = true
+                }) {
+                    Text("📤 Share your achievement")
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                        .padding(.vertical, 10)
+                        .frame(width: 280) // Matches certificate width with padding
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue, lineWidth: 2)
+                        )
                 }
-                .font(.headline)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-                .padding(.horizontal)
 
                 Button("Done") {
                     dismiss()
                 }
+                .foregroundColor(.blue)
                 .padding(.bottom)
             }
+            .padding(.top, 40)
         }
         .sheet(isPresented: $showShareScreen) {
             CertificateShareView(summary: summary)
