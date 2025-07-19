@@ -1,10 +1,3 @@
-//
-//  Announcer.swift
-//  PunchKickTraining
-//
-//  Created by Jecky Toledo (renamed and expanded)
-//
-
 import Foundation
 import AVFoundation
 import SwiftUI
@@ -14,14 +7,22 @@ class Announcer: ObservableObject {
     private var synthesizer = AVSpeechSynthesizer()
     private var notificationObserver: NSObjectProtocol?
     private var lastAnnouncedTime: Int = 0
-    
     private var countdownWorkItem: DispatchWorkItem?
+    
+    private var lastAnnouncedForceSegment: Int = 0
+    private var lastAnnouncedProgressSegment: Int = 0
 
     @AppStorage("announceTime") var announceTime: Bool = true
     @AppStorage("timeAnnounceFrequency") var timeAnnounceFrequency: Int = 30
 
     @AppStorage("announceStrikes") var announceStrikes: Bool = true
     @AppStorage("strikeAnnounceFrequency") var strikeAnnounceFrequency: Int = 10
+    
+    @AppStorage("announceForce") private var announceForce: Bool = false
+    @AppStorage("forceAnnounceFrequency") private var forceAnnounceFrequency: Int = 100
+
+    @AppStorage("announceProgress") private var announceProgress: Bool = false
+    @AppStorage("progressAnnounceFrequency") private var progressAnnounceFrequency: Int = 20
 
     private var currentStrikeCount: Int = 0
     private var lastAnnouncedStrikeCount: Int = 0
@@ -30,60 +31,56 @@ class Announcer: ObservableObject {
     @Published var isCountingDown: Bool = false
     @Published var trainingStarted: Bool = false
     @Published var startTime: Date? = nil
-    
 
-    // MARK: - Public API
-    
-    //----------
     init() {
         setupLifecycleObserver()
     }
-    
-    //----------
+
     func start() {
-        self.startTime = Date()
+        stop() // cancel any prior timer or countdown
+
+        startTime = Date()
+        trainingStarted = true
+        lastAnnouncedTime = 0
+
+        if announceTime {
+            announceElapsedTime()
+        }
+
         timer = Timer.scheduledTimer(timeInterval: 1.0,
                                      target: self,
                                      selector: #selector(checkAndAnnounceElapsedTime),
                                      userInfo: nil,
                                      repeats: true)
-
-        if announceTime {
-            announceElapsedTime() // Optional: speak immediately
-        }
-        //-----
-        lastAnnouncedTime = 0
     }
 
     func stop() {
         timer?.invalidate()
         timer = nil
-        //-----
+
         countdownWorkItem?.cancel()
         countdownWorkItem = nil
-        //------
-        self.startTime = nil
-        lastAnnouncedStrikeCount = 0
-        currentStrikeCount = 0
+
+        startTime = nil
         isCountingDown = false
         visualCountdown = nil
-        //-------
-        lastAnnouncedTime = 0
-    }
-    
-    func updateStrikeCount(to newCount: Int) {
-        guard announceStrikes else { return }
-        currentStrikeCount = newCount
+        trainingStarted = false
 
+        lastAnnouncedTime = 0
+        lastAnnouncedStrikeCount = 0
+        currentStrikeCount = 0
+    }
+
+    func updateStrikeCount(to newCount: Int) {
+        guard announceStrikes, trainingStarted else { return }
+
+        currentStrikeCount = newCount
         if currentStrikeCount - lastAnnouncedStrikeCount >= strikeAnnounceFrequency {
             lastAnnouncedStrikeCount = currentStrikeCount
-            let text = "\(currentStrikeCount) strikes"
-            speak(text)
+            speak("\(currentStrikeCount) strikes")
         }
     }
-    
-    //-----
-    
+
     func startCountdownThenBeginTraining(completion: @escaping () -> Void) {
         let countdownValues = ["4", "3", "2", "1", "Go"]
         isCountingDown = true
@@ -97,10 +94,9 @@ class Announcer: ObservableObject {
                 return
             }
 
-            let value = countdownValues[index]
-            visualCountdown = value
+            visualCountdown = countdownValues[index]
 
-            let utterance = AVSpeechUtterance(string: value)
+            let utterance = AVSpeechUtterance(string: countdownValues[index])
             utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
             utterance.rate = 0.5
             synthesizer.speak(utterance)
@@ -108,51 +104,50 @@ class Announcer: ObservableObject {
             countdownWorkItem = DispatchWorkItem {
                 speakNext(index: index + 1)
             }
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: countdownWorkItem!)
         }
 
         speakNext(index: 0)
     }
-    
-    //-----
-
-    // MARK: - Private
 
     @objc private func checkAndAnnounceElapsedTime() {
-        guard announceTime, let start = startTime else { return }
+        guard announceTime, trainingStarted, let start = startTime else { return }
 
         let elapsed = Int(Date().timeIntervalSince(start))
 
         let shouldAnnounce = (elapsed >= timeAnnounceFrequency) &&
-                             ((elapsed % timeAnnounceFrequency) == 0)
+                             ((elapsed % timeAnnounceFrequency) == 0) &&
+                             (elapsed != lastAnnouncedTime)
 
-        if shouldAnnounce && elapsed != lastAnnouncedTime {
+        if shouldAnnounce {
             lastAnnouncedTime = elapsed
             announceElapsedTime()
         }
-        
     }
 
     private func announceElapsedTime() {
         guard let start = startTime else { return }
-        let elapsed = Int(Date().timeIntervalSince(start))
 
+        let elapsed = Int(Date().timeIntervalSince(start))
         let minutes = elapsed / 60
         let seconds = elapsed % 60
 
-        var announcement = ""
-        if minutes > 0 {
-            announcement = "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
-        } else {
-            announcement = "\(seconds) second\(seconds == 1 ? "" : "s")"
-        }
+        let announcement = minutes > 0
+            ? "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
+            : "\(seconds) second\(seconds == 1 ? "" : "s")"
 
         speak(announcement)
     }
 
-    
-    private func speak(_ text: String) {
-        // Injecting a short silent utterance to force activation
+    func speak(_ text: String) {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true, options: [])
+        } catch {
+            print("⚠️ AVAudioSession setup failed: \(error)")
+        }
+
         let warmup = AVSpeechUtterance(string: " ")
         warmup.voice = AVSpeechSynthesisVoice(language: "en-US")
         warmup.volume = 0.0
@@ -164,8 +159,8 @@ class Announcer: ObservableObject {
         utterance.rate = 0.5
         synthesizer.speak(utterance)
     }
-    
-    func setupLifecycleObserver() {
+
+    private func setupLifecycleObserver() {
         notificationObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil,
@@ -174,22 +169,78 @@ class Announcer: ObservableObject {
             self?.resetSynthesizer()
         }
     }
-    
-    //----
-    func announceDisqualified() {
-        speak("Disqualified.")
-    }
-    //----
-    
+
     private func resetSynthesizer() {
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
         }
-        print("Resetting speech synthesizer")
-        // Reinitialize
+
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
         try? AVAudioSession.sharedInstance().setActive(true, options: [])
-        self.synthesizer = AVSpeechSynthesizer()
+        synthesizer = AVSpeechSynthesizer()
+    }
+
+    func announceStartOfRound(round: TrainingRound, index: Int, type: TrainingType) {
+        let intro = "Start round \(index) \(round.name)"
+        speak(intro)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            var goalAnnouncement = ""
+
+            switch type {
+            case .forceDriven:
+                if let force = round.goalForce, force > 0 {
+                    goalAnnouncement = "Target: \(Int(force)) newtons"
+                }
+            case .strikesDriven:
+                if let strikes = round.goalStrikes, strikes > 0 {
+                    goalAnnouncement = "Target: \(strikes) strikes"
+                }
+            case .timeDriven:
+                if let time = round.roundTime, time > 0 {
+                    goalAnnouncement = "Target: \(time) seconds"
+                }
+            }
+
+            if !goalAnnouncement.isEmpty {
+                self.speak(goalAnnouncement)
+            }
+        }
+    }
+
+    func announceRoundEnded() {
+        speak("Round ended")
+    }
+
+    func announceRest(for restTime: Int) {
+        speak("Rest for \(restTime) seconds")
+    }
+    
+    func announceDisqualified() {
+        speak("Disqualified")
+    }
+    
+    func announceTrainingEnded() {
+        speak("Training ended")
+    }
+    
+    func maybeAnnounceForce(_ totalForce: Double) {
+        guard announceForce, forceAnnounceFrequency > 0 else { return }
+
+        let roundedForce = Int(totalForce)
+        if roundedForce / forceAnnounceFrequency != lastAnnouncedForceSegment {
+            lastAnnouncedForceSegment = roundedForce / forceAnnounceFrequency
+            speak("\(roundedForce) Newtons")
+        }
+    }
+
+    func maybeAnnounceProgress(_ percent: Double) {
+        guard announceProgress, progressAnnounceFrequency > 0 else { return }
+
+        let roundedPercent = Int(percent)
+        if roundedPercent / progressAnnounceFrequency != lastAnnouncedProgressSegment {
+            lastAnnouncedProgressSegment = roundedPercent / progressAnnounceFrequency
+            speak("\(roundedPercent)% completed")
+        }
     }
 }
-

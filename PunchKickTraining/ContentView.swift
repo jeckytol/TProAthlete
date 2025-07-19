@@ -1,3 +1,5 @@
+// ContentView.swift
+
 import SwiftUI
 import CoreHaptics
 import AVFoundation
@@ -18,6 +20,10 @@ struct ContentView: View {
     @State private var isShowingSettings = false
     @State private var disqualified: Bool = false
     @State private var trainingSummaryForCertificate: TrainingSummary? = nil
+
+    var trainingProgressPercentage: Double {
+        return bluetoothManager.trainingProgressPercentage
+    }
 
     var body: some View {
         ZStack {
@@ -50,31 +56,59 @@ struct ContentView: View {
                             .foregroundColor(.white)
                     }
                 }.padding(.horizontal)
-
+                
                 HStack(spacing: 10) {
+                    // Start Training Button
                     Button("Start Training", action: startTraining)
                         .disabled(isTraining)
                         .padding()
-                        .background(isTraining ? Color.gray : Color.green)
-                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black)
+                        .foregroundColor(isTraining ? .gray : .green)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isTraining ? Color.gray : Color.green, lineWidth: 3)
+                        )
                         .cornerRadius(8)
 
+                    // Stop Training Button
                     Button("Stop Training", action: stopTraining)
                         .disabled(!isTraining)
                         .padding()
-                        .background(isTraining ? Color.red : Color.gray)
-                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black)
+                        .foregroundColor(isTraining ? .red : .gray)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isTraining ? Color.red : Color.gray, lineWidth: 3)
+                        )
                         .cornerRadius(8)
-                }.padding(.horizontal)
+                }
+                .padding(.horizontal)
 
-                Text(formatTime(sessionManager.sessionElapsedTime))
+                Text(formatTime(sessionManager.activeElapsedTime)) // total active time (most likely intended)
                     .font(.system(size: 36, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
 
                 VStack(spacing: 32) {
-                    MetricCircle(title: "Training Goal %", value: String(format: "%.0f%%", bluetoothManager.trainingProgressPercentage), gaugeValue: bluetoothManager.trainingProgressPercentage / 100, gaugeColor: .green)
-                    MetricCircle(title: "Total Force", value: String(format: "%.0f", bluetoothManager.totalForce), gaugeValue: nil, gaugeColor: .blue)
-                    MetricCircle(title: "Strikes", value: String(bluetoothManager.totalStrikes), gaugeValue: nil, gaugeColor: .red)
+                    MetricCircle(
+                        title: "Training Goal %",
+                        value: String(format: "%.0f%%", trainingProgressPercentage),
+                        gaugeValue: trainingProgressPercentage / 100,
+                        gaugeColor: Color.green
+                    )
+                    MetricCircle(
+                        title: "Total Force",
+                        value: String(format: "%.0f", bluetoothManager.totalForce),
+                        gaugeValue: nil,
+                        gaugeColor: Color.blue
+                    )
+                    MetricCircle(
+                        title: "Strikes",
+                        value: String(bluetoothManager.totalStrikes),
+                        gaugeValue: nil,
+                        gaugeColor: Color.red
+                    )
                 }
 
                 Spacer()
@@ -85,9 +119,17 @@ struct ContentView: View {
                         Spacer()
                         Text(sessionManager.currentRoundName).foregroundColor(.white).font(.subheadline)
                     }
-                    ProgressView(value: bluetoothManager.currentForcePercentage / 100)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .yellow))
-                        .frame(height: 12)
+
+                    if training.trainingType == .timeDriven {
+                        let currentTime = Double(sessionManager.currentRound?.roundTime ?? 1)
+                        ProgressView(value: Double(sessionManager.activeElapsedTimeForCurrentRound), total: currentTime)
+                            .progressViewStyle(LinearProgressViewStyle(tint: .yellow))
+                            .frame(height: 12)
+                    } else {
+                        ProgressView(value: bluetoothManager.currentRoundProgressPercentage / 100)
+                            .progressViewStyle(LinearProgressViewStyle(tint: .yellow))
+                            .frame(height: 12)
+                    }
                 }
                 .padding()
                 .background(Color(UIColor.darkGray))
@@ -99,27 +141,45 @@ struct ContentView: View {
             .padding()
             .onAppear {
                 prepareHaptics()
-                bluetoothManager.sessionManager = sessionManager
-                bluetoothManager.announcer = announcer
-                bluetoothManager.isTrainingActive = false
-                sessionManager.startNewSession(with: training.rounds)
+
+                    // Dependency injection
+                    bluetoothManager.sessionManager = sessionManager
+                
+                    sessionManager.bluetoothManager = bluetoothManager
+                
+                    bluetoothManager.announcer = announcer
+                    sessionManager.announcer = announcer
+
+                    // Ensure training is inactive
+                    bluetoothManager.isTrainingActive = false
+
+                    // Reset training session and metrics
+                    sessionManager.resetSession()
+                    bluetoothManager.resetMetrics()
+
+                    // Stop training callback setup
+                    sessionManager.stopTrainingCallback = { [weak sessionManager] in
+                        guard let manager = sessionManager else { return }
+                        if manager.stopTrainingCallback != nil {
+                            manager.stopTrainingCallback = nil
+                            stopTraining()
+                        }
+                    }
+                
+                    //sessionManager.stopTrainingCallback = {
+                        //stopTraining()
+                    //}
+                
+
                 try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.allowBluetooth, .mixWithOthers])
                 try? AVAudioSession.sharedInstance().setActive(true)
-                bluetoothManager.stopTrainingCallback = { stopTraining() }
             }
             .sheet(isPresented: $isShowingSettings) {
                 SettingsView(bluetoothManager: bluetoothManager)
             }
-            //-----
-            //.sheet(item: $trainingSummaryForCertificate) { summary in
-             //   TrainingCertificateView(summary: summary)
-            //}
-            //---
             .sheet(item: $trainingSummaryForCertificate) { summary in
                 TrainingCertificatePreviewView(summary: summary)
             }
-            
-            //----
 
             if let countdownText = announcer.visualCountdown {
                 Text(countdownText)
@@ -141,65 +201,116 @@ struct ContentView: View {
                     .transition(.scale)
                     .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: disqualified)
             }
+
+            if sessionManager.isResting {
+                ZStack {
+                    // Dark full-screen background
+                    Color.black.opacity(0.75)
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 16) {
+                        Text("Rest Time")
+                            .font(.title)
+                            .foregroundColor(.blue)
+
+                        Text("\(sessionManager.restTimeRemaining)")
+                            .font(.system(size: 100, weight: .bold, design: .rounded))
+                            .foregroundColor(.blue)
+                            .shadow(radius: 10)
+                    }
+                    .padding(40)
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.blue, lineWidth: 4)
+                    )
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
     }
 
+    
+    
     func startTraining() {
         UIApplication.shared.isIdleTimerDisabled = true
         bluetoothManager.isTrainingActive = false
-        bluetoothManager.resetMetrics()
         announcer.stop()
-        sessionManager.reset()
+
+        sessionManager.resetSession()
+        sessionManager.announcer = announcer
         isTraining = true
         disqualified = false
-
         bluetoothManager.configureSensorSource()
 
         announcer.startCountdownThenBeginTraining {
             bluetoothManager.isTrainingActive = true
             announcer.trainingStarted = true
-            sessionManager.startSessionTimer()
+
+            sessionManager.startNewSession(with: training.rounds, type: training.trainingType)
+            bluetoothManager.resetMetrics()
+
+            triggerHaptic()
+
+            bluetoothManager.stopTrainingCallback = {
+                stopTraining()
+            }
+            
+
+            // ✅ Start a timer for round progress and disqualification check
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                if announcer.trainingStarted {
-                    announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
-                    if let cutoff = sessionManager.currentRound?.cutoffTime, cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
-                        disqualified = true
-                        stopTraining()
-                    }
+                // ✅ Check disqualification condition for force/strikes trainings
+                if (training.trainingType == .forceDriven || training.trainingType == .strikesDriven),
+                   let cutoff = sessionManager.currentRound?.cutoffTime,
+                   cutoff > 0,
+                   sessionManager.activeElapsedTimeForCurrentRound >= cutoff,
+                   !sessionManager.isCurrentRoundGoalMet,
+                   !disqualified {
+
+                    disqualified = true
+                    announcer.announceDisqualified()
+                    stopTraining()
                 }
             }
-            announcer.start()
-            triggerHaptic()
         }
     }
-
+    
     func stopTraining() {
         guard isTraining else { return }
         isTraining = false
         UIApplication.shared.isIdleTimerDisabled = false
         timer?.invalidate()
+        announcer.announceTrainingEnded()
         announcer.stop()
         sessionManager.stopSessionTimer()
         bluetoothManager.isTrainingActive = false
         triggerHaptic()
 
+        print("🧾 Saving summary with goalCompletion: \(sessionManager.trainingGoalCompletionPercentage)")
+        
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
-            elapsedTime: sessionManager.sessionElapsedTime,
+            elapsedTime: sessionManager.activeElapsedTime,
             disqualified: disqualified,
             disqualifiedRound: disqualified ? sessionManager.currentRoundName : nil,
             totalForce: bluetoothManager.totalForce,
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
             strikeCount: bluetoothManager.totalStrikes,
-            trainingGoalForce: training.rounds.map(\ .goalForce).reduce(0, +),
+            trainingGoalForce: training.rounds.map { $0.goalForce ?? 0 }.reduce(0, +),
+            //trainingGoalCompletionPercentage: sessionManager.trainingGoalCompletionPercentage,
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,
             nickname: profileManager.profile?.nickname ?? "Unknown"
         )
 
-        trainingSummaryForCertificate = summary
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            trainingSummaryForCertificate = summary
+        }
+
         TrainingSummaryManager().saveSummary(summary) { _ in }
     }
 
@@ -220,39 +331,39 @@ struct ContentView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
     }
-}
 
-struct MetricCircle: View {
-    var title: String
-    var value: String
-    var gaugeValue: Double?
-    var gaugeColor: Color
+    struct MetricCircle: View {
+        var title: String
+        var value: String
+        var gaugeValue: Double?
+        var gaugeColor: Color
 
-    var body: some View {
-        HStack(spacing: 22) {
-            Text(title)
-                .foregroundColor(.white)
-                .font(.headline)
-                .frame(width: 120, alignment: .leading)
-
-            ZStack {
-                Circle()
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 12)
-                    .frame(width: 120, height: 120)
-
-                if let gauge = gaugeValue {
-                    Circle()
-                        .trim(from: 0.0, to: min(gauge, 1.0))
-                        .stroke(gaugeColor, lineWidth: 12)
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 120, height: 120)
-                        .animation(.easeInOut, value: gauge)
-                }
-
-                Text(value)
+        var body: some View {
+            HStack(spacing: 22) {
+                Text(title)
                     .foregroundColor(.white)
-                    .font(.title2)
-                    .bold()
+                    .font(.headline)
+                    .frame(width: 120, alignment: .leading)
+
+                ZStack {
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 12)
+                        .frame(width: 120, height: 120)
+
+                    if let gauge = gaugeValue {
+                        Circle()
+                            .trim(from: 0.0, to: min(gauge, 1.0))
+                            .stroke(gaugeColor, lineWidth: 12)
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 120, height: 120)
+                            .animation(.easeInOut, value: gauge)
+                    }
+
+                    Text(value)
+                        .foregroundColor(.white)
+                        .font(.title2)
+                        .bold()
+                }
             }
         }
     }

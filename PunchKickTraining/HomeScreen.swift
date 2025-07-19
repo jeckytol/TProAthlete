@@ -150,8 +150,13 @@ struct HomeScreen: View {
             }
             .navigationBarHidden(true)
             .onAppear {
-                refreshDownloadedPublicTrainings { updated in
-                    trainings = updated
+                let all = SavedTraining.loadAll()
+                print("🔍 Loaded \(all.count) SavedTrainings from UserDefaults")
+                for t in all {
+                    print("📦 '\(t.name)' — \(t.rounds.count) rounds, downloadedFromPublic: \(t.isDownloadedFromPublic)")
+                }
+                refreshDownloadedPublicTrainings(from: all) { merged in
+                    trainings = merged.sorted(by: { $0.creationDate > $1.creationDate })
                 }
             }
             .sheet(item: $navigationIntent) { intent in
@@ -201,23 +206,24 @@ struct HomeScreen: View {
         SavedTraining.saveAll(trainings)
     }
 
-    private func refreshDownloadedPublicTrainings(completion: @escaping ([SavedTraining]) -> Void) {
+    private func refreshDownloadedPublicTrainings(from baseTrainings: [SavedTraining], completion: @escaping ([SavedTraining]) -> Void) {
         let db = Firestore.firestore()
-        let allLocalTrainings = SavedTraining.loadAll()
-        var updatedTrainings = allLocalTrainings
-
+        var updatedTrainings = baseTrainings
         let group = DispatchGroup()
 
-        for (index, training) in allLocalTrainings.enumerated() {
+        for (index, training) in baseTrainings.enumerated() {
             guard training.isDownloadedFromPublic else { continue }
 
             group.enter()
             db.collection("public_trainings").document(training.name).getDocument { snapshot, error in
-                if let data = snapshot?.data(),
-                   let updated = decodeFirestoreTraining(name: training.name, data: data) {
-                    updatedTrainings[index] = updated
+                defer { group.leave() }
+
+                guard let data = snapshot?.data(),
+                      let updated = decodeFirestoreTraining(name: training.name, data: data) else {
+                    return
                 }
-                group.leave()
+
+                updatedTrainings[index] = updated
             }
         }
 
@@ -240,15 +246,32 @@ struct HomeScreen: View {
         }
 
         let rounds = roundArray.compactMap { roundDict -> TrainingRound? in
-            guard
-                let name = roundDict["name"] as? String,
-                let force = roundDict["goalForce"] as? Double
-            else {
-                return nil
-            }
-            let cutoff = (roundDict["cutoffTime"] as? Double).map { Int($0) }
-            return TrainingRound(name: name, goalForce: force, cutoffTime: cutoff)
+            guard let name = roundDict["name"] as? String else { return nil }
+
+            let goalForce = roundDict["goalForce"] as? Double ?? 0
+            let goalStrikes = roundDict["goalStrikes"] as? Int
+            let cutoffTime = roundDict["cutoffTime"] as? Int
+            let roundTime = roundDict["roundTime"] as? Int
+            let restTime = roundDict["restTime"] as? Int ?? 0
+
+            return TrainingRound(
+                name: name,
+                goalForce: goalForce,
+                goalStrikes: goalStrikes,
+                cutoffTime: cutoffTime,
+                roundTime: roundTime,
+                restTime: restTime
+            )
         }
+
+        let trainingTypeRaw = data["trainingType"] as? String ?? ""
+        let resolvedType: TrainingType = {
+            if trainingTypeRaw == "strengthDriven" {
+                return .forceDriven
+            } else {
+                return TrainingType(rawValue: trainingTypeRaw) ?? .forceDriven
+            }
+        }()
 
         return SavedTraining(
             id: UUID(),
@@ -258,7 +281,9 @@ struct HomeScreen: View {
             creationDate: timestamp.dateValue(),
             isPublic: isPublic,
             classification: classif,
-            isDownloadedFromPublic: true
+            isDownloadedFromPublic: true,
+            trainingType: resolvedType
         )
     }
 }
+

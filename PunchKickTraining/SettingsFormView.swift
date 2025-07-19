@@ -15,6 +15,13 @@ struct SettingsFormView: View {
     @AppStorage("sensorSource") var sensorSource: String = "Phone"
     @AppStorage("nickname") private var nickname: String = ""
     @AppStorage("selectedAvatar") private var selectedAvatar: String = "avatar_bear"
+    
+    
+    @AppStorage("announceForce") private var announceForce: Bool = false
+    @AppStorage("forceAnnounceFrequency") private var forceAnnounceFrequency: Int = 100
+
+    @AppStorage("announceProgress") private var announceProgress: Bool = false
+    @AppStorage("progressAnnounceFrequency") private var progressAnnounceFrequency: Int = 20
 
     @State private var age: String = ""
     @State private var athleteType: String = "Beginner"
@@ -108,6 +115,7 @@ struct SettingsFormView: View {
                 LabeledSlider(label: "Min Motion Duration (sec)", value: $minMotionDuration, range: 0.0...1.0)
             }
 
+            //--------------------------
             // Voice Feedback Section
             Section(header: Text("Voice Feedback")) {
                 Toggle("Announce Time", isOn: $announceTime)
@@ -129,7 +137,29 @@ struct SettingsFormView: View {
                         }
                     }
                 }
+                
+                Toggle("Announce Force", isOn: $announceForce)
+
+                if announceForce {
+                    Picker("Force Frequency (N)", selection: $forceAnnounceFrequency) {
+                        ForEach([50, 100, 150, 200, 250], id: \.self) {
+                            Text("\($0) N")
+                        }
+                    }
+                }
+
+                Toggle("Announce Progress", isOn: $announceProgress)
+
+                if announceProgress {
+                    Picker("Progress Frequency (%)", selection: $progressAnnounceFrequency) {
+                        ForEach([10, 20, 25], id: \.self) {
+                            Text("\($0)%")
+                        }
+                    }
+                }
             }
+            
+            //--------------------------
 
             // Reset Section
             Section {

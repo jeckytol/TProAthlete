@@ -78,4 +78,28 @@ class ChallengeProgressManager: ObservableObject {
         listener?.remove()
         listener = nil
     }
+    
+    func resetUserProgress(for challengeId: String, runId: String, userId: String) {
+        let docRef = db.collection("challenge_progress")
+            .whereField("challengeId", isEqualTo: challengeId)
+            .whereField("runId", isEqualTo: runId)
+            .whereField("userId", isEqualTo: userId)
+
+        docRef.getDocuments { snapshot, error in
+            if let error = error {
+                print("⚠️ Failed to fetch previous progress: \(error)")
+                return
+            }
+
+            snapshot?.documents.forEach { doc in
+                doc.reference.delete { deleteError in
+                    if let deleteError = deleteError {
+                        print("⚠️ Failed to delete old progress doc: \(deleteError)")
+                    } else {
+                        print("🗑️ Deleted previous progress for user \(userId)")
+                    }
+                }
+            }
+        }
+    }
 }

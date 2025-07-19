@@ -12,6 +12,7 @@ struct TrainingEditorView: View {
     @State private var rounds: [TrainingRound] = []
     @State private var isPublic: Bool = false
     @State private var classification: TrainingClassification = .medium
+    @State private var trainingType: TrainingType = .forceDriven
     @State private var exercises: [Exercise] = []
     @State private var selectedVideoURL: URL? = nil
 
@@ -43,6 +44,30 @@ struct TrainingEditorView: View {
                                 .foregroundColor(.white)
                                 .font(.system(.body, design: .default).bold().italic())
                                 .cornerRadius(8)
+
+                            
+                            Text("Training Type")
+                                .foregroundColor(.white)
+                                .font(.subheadline.bold())
+
+                            HStack {
+                                ForEach(TrainingType.allCases, id: \.self) { type in
+                                    Text(type.label)
+                                        .font(.subheadline)
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 12)
+                                        .background(trainingType == type ? Color.blue : Color.gray.opacity(0.3))
+                                        .foregroundColor(trainingType == type ? .white : .gray)
+                                        .cornerRadius(8)
+                                        .onTapGesture {
+                                            trainingType = type
+                                        }
+                                }
+                            }
+
+                            Text(trainingType.description)
+                                .font(.footnote.italic())
+                                .foregroundColor(.gray)
 
                             HStack {
                                 Text("Public Training")
@@ -89,9 +114,6 @@ struct TrainingEditorView: View {
                                                 Text(exercise)
                                             }
                                         }
-                                        .onChange(of: rounds[index].name) { _ in
-                                            // video will be updated from selected name
-                                        }
                                         .pickerStyle(MenuPickerStyle())
                                         .padding(8)
                                         .background(Color.gray.opacity(0.2))
@@ -110,27 +132,94 @@ struct TrainingEditorView: View {
                                         }
                                     }
 
-                                    HStack {
-                                        Text("Force Goal (N)")
-                                            .foregroundColor(.gray)
-                                        Spacer()
-                                        TextField("", value: $rounds[index].goalForce, formatter: NumberFormatter())
-                                            .keyboardType(.numberPad)
-                                            .padding(8)
-                                            .frame(width: 100)
-                                            .background(Color.gray.opacity(0.2))
-                                            .foregroundColor(.white)
-                                            .cornerRadius(8)
+                                    if trainingType == .forceDriven {
+                                        HStack {
+                                            Text("Force Goal (N)")
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                            TextField("", value: $rounds[index].goalForce, formatter: NumberFormatter())
+                                                .keyboardType(.numberPad)
+                                                .padding(8)
+                                                .frame(width: 100)
+                                                .background(Color.gray.opacity(0.2))
+                                                .foregroundColor(.white)
+                                                .cornerRadius(8)
+                                        }
+
+                                        HStack {
+                                            Text("Cutoff Time (sec)")
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                            TextField("Optional", value: Binding(
+                                                get: { rounds[index].cutoffTime ?? 0 },
+                                                set: { rounds[index].cutoffTime = $0 == 0 ? nil : $0 }
+                                            ), formatter: NumberFormatter())
+                                                .keyboardType(.numberPad)
+                                                .padding(8)
+                                                .frame(width: 100)
+                                                .background(Color.gray.opacity(0.2))
+                                                .foregroundColor(.white)
+                                                .cornerRadius(8)
+                                        }
+                                    }
+
+                                    if trainingType == .strikesDriven {
+                                        HStack {
+                                            Text("Strikes Goal")
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                            TextField("", value: Binding(
+                                                get: { rounds[index].goalStrikes ?? 0 },
+                                                set: { rounds[index].goalStrikes = $0 == 0 ? nil : $0 }
+                                            ), formatter: NumberFormatter())
+                                                .keyboardType(.numberPad)
+                                                .padding(8)
+                                                .frame(width: 100)
+                                                .background(Color.gray.opacity(0.2))
+                                                .foregroundColor(.white)
+                                                .cornerRadius(8)
+                                        }
+
+                                        HStack {
+                                            Text("Cutoff Time (sec)")
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                            TextField("Optional", value: Binding(
+                                                get: { rounds[index].cutoffTime ?? 0 },
+                                                set: { rounds[index].cutoffTime = $0 == 0 ? nil : $0 }
+                                            ), formatter: NumberFormatter())
+                                                .keyboardType(.numberPad)
+                                                .padding(8)
+                                                .frame(width: 100)
+                                                .background(Color.gray.opacity(0.2))
+                                                .foregroundColor(.white)
+                                                .cornerRadius(8)
+                                        }
+                                    }
+
+                                    if trainingType == .timeDriven {
+                                        HStack {
+                                            Text("Round Time (sec)")
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                            TextField("", value: Binding(
+                                                get: { rounds[index].roundTime ?? 60 },
+                                                set: { rounds[index].roundTime = $0 }
+                                            ), formatter: NumberFormatter())
+                                                .keyboardType(.numberPad)
+                                                .padding(8)
+                                                .frame(width: 100)
+                                                .background(Color.gray.opacity(0.2))
+                                                .foregroundColor(.white)
+                                                .cornerRadius(8)
+                                        }
                                     }
 
                                     HStack {
-                                        Text("Cutoff Time (sec)")
+                                        Text("Rest Time (sec)")
                                             .foregroundColor(.gray)
                                         Spacer()
-                                        TextField("Optional", value: Binding(
-                                            get: { rounds[index].cutoffTime ?? 0 },
-                                            set: { rounds[index].cutoffTime = $0 == 0 ? nil : $0 }
-                                        ), formatter: NumberFormatter())
+                                        TextField("", value: $rounds[index].restTime, formatter: NumberFormatter())
                                             .keyboardType(.numberPad)
                                             .padding(8)
                                             .frame(width: 100)
@@ -144,7 +233,14 @@ struct TrainingEditorView: View {
                             }
 
                             Button(action: {
-                                rounds.append(TrainingRound(name: exercises.first?.name ?? "New Round", goalForce: 1000))
+                                rounds.append(TrainingRound(
+                                    name: exercises.first?.name ?? "New Round",
+                                    goalForce: trainingType == .forceDriven ? 1000 : 0,
+                                    goalStrikes: trainingType == .strikesDriven ? 10 : nil,
+                                    cutoffTime: nil,
+                                    roundTime: trainingType == .timeDriven ? 60 : nil,
+                                    restTime: 0
+                                ))
                             }) {
                                 Label("Add Round", systemImage: "plus.circle")
                                     .foregroundColor(.gray)
@@ -190,6 +286,7 @@ struct TrainingEditorView: View {
                 self.rounds = training.rounds
                 self.isPublic = training.isPublic
                 self.classification = training.classification
+                self.trainingType = training.trainingType
             }
         }
         .onTapGesture {
@@ -220,14 +317,32 @@ struct TrainingEditorView: View {
     }
 
     private func saveTraining() {
+        var sanitizedRounds = rounds
+
+        for i in sanitizedRounds.indices {
+            switch trainingType {
+            case .forceDriven:
+                sanitizedRounds[i].goalStrikes = nil
+                sanitizedRounds[i].roundTime = nil
+            case .strikesDriven:
+                sanitizedRounds[i].goalForce = 0
+                sanitizedRounds[i].roundTime = nil
+            case .timeDriven:
+                sanitizedRounds[i].goalForce = 0
+                sanitizedRounds[i].goalStrikes = nil
+                sanitizedRounds[i].cutoffTime = nil
+            }
+        }
+
         let newTraining = SavedTraining(
             id: initialTraining?.id ?? UUID(),
             name: name,
-            rounds: rounds,
+            rounds: sanitizedRounds,
             creatorNickname: nickname,
             creationDate: initialTraining?.creationDate ?? Date(),
             isPublic: isPublic,
-            classification: classification
+            classification: classification,
+            trainingType: trainingType
         )
 
         if isPublic {
@@ -273,10 +388,14 @@ struct TrainingEditorView: View {
             "creationDate": Timestamp(date: training.creationDate),
             "isPublic": training.isPublic,
             "classification": training.classification.rawValue,
+            "trainingType": training.trainingType.rawValue,
             "rounds": training.rounds.map { [
                 "name": $0.name,
                 "goalForce": $0.goalForce,
-                "cutoffTime": $0.cutoffTime ?? 0
+                "goalStrikes": $0.goalStrikes ?? 0,
+                "cutoffTime": $0.cutoffTime ?? 0,
+                "roundTime": $0.roundTime ?? 0,
+                "restTime": $0.restTime
             ]}
         ]
 

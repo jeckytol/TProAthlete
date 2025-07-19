@@ -245,7 +245,7 @@ struct NewChallengeView: View {
     //--------
 
     private func totalForce(of training: SavedTraining) -> Int {
-        training.rounds.reduce(0) { $0 + Int($1.goalForce) }
+        training.rounds.reduce(0) { $0 + Int($1.goalForce ?? 0) }
     }
 
     private func saveChallenge() {

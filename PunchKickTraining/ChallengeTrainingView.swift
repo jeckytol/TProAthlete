@@ -4,7 +4,7 @@ import AVFoundation
 struct ChallengeTrainingView: View {
     let challenge: Challenge
     let training: SavedTraining
-    let runId: String  // ✅ This line ensures the shared runId is used
+    let runId: String
 
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var userProfileManager: UserProfileManager
@@ -22,11 +22,14 @@ struct ChallengeTrainingView: View {
     @State private var elapsedTimer: Timer? = nil
     @State private var disqualified: Bool = false
     @State private var hasChallengeEnded = false
+    @State private var isStoppingChallenge = false
+    @State private var isStopChallengeInProgress = false
+    
+    @State private var isCountdownActive: Bool = false
 
     var userId: String { userProfileManager.getCurrentUserId() }
     var nickname: String { userProfileManager.profile?.nickname ?? "Unknown" }
     var avatarName: String { userProfileManager.profile?.avatarName ?? "defaultAvatar" }
-
 
     var sortedProgress: [ChallengeProgress] {
         progressManager.allProgress
@@ -36,6 +39,18 @@ struct ChallengeTrainingView: View {
 
     var isUserDisqualified: Bool {
         progressManager.allProgress.first(where: { $0.userId == userId && $0.runId == runId })?.isDisqualified ?? false
+    }
+    
+    private var roundProgress: Double {
+        guard bluetoothManager.isTrainingActive else { return 0.0 }
+
+        if training.trainingType == .timeDriven {
+            let roundDuration = Double(sessionManager.currentRound?.roundTime ?? 1)
+            let elapsed = Double(sessionManager.activeElapsedTimeForCurrentRound)
+            return min(elapsed / roundDuration, 1.0)
+        } else {
+            return bluetoothManager.currentRoundProgressPercentage / 100.0
+        }
     }
 
     var body: some View {
@@ -65,21 +80,52 @@ struct ChallengeTrainingView: View {
                     .shadow(radius: 10)
                     .transition(.scale)
             }
+            
+            if sessionManager.isResting {
+                ZStack {
+                    // Dark full-screen background
+                    Color.black.opacity(0.75)
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 16) {
+                        Text("Rest Time")
+                            .font(.title)
+                            .foregroundColor(.blue)
+
+                        Text("\(sessionManager.restTimeRemaining)")
+                            .font(.system(size: 100, weight: .bold, design: .rounded))
+                            .foregroundColor(.blue)
+                            .shadow(radius: 10)
+                    }
+                    .padding(40)
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.blue, lineWidth: 4)
+                    )
+                }
+                .transition(.opacity)
+                .zIndex(2)
+            }
         }
         .onAppear {
             bluetoothManager.announcer = announcer
             bluetoothManager.sessionManager = sessionManager
+            // ✅ Provide access to hasChallengeEnded inside sessionManager
+            sessionManager.isChallengeEnded = { hasChallengeEnded }
             startChallenge()
         }
         .onDisappear {
-            reportingTimer?.invalidate()
-            elapsedTimer?.invalidate()
-            progressManager.stopObserving()
+            print("📤 ChallengeTrainingView disappeared")
+
+            // Just call stopChallenge() once if it hasn’t already run
             if !hasChallengeEnded {
-                DispatchQueue.main.async {
-                    hasChallengeEnded = true
-                }
+                hasChallengeEnded = true
+                print("⏹ Setting hasChallengeEnded = true inside onDisappear")
                 stopChallenge()
+            } else {
+                print("⛔️ onDisappear ignored — challenge already ended.")
             }
         }
     }
@@ -116,25 +162,30 @@ struct ChallengeTrainingView: View {
 
     private var userProgressPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Current Round: \(bluetoothManager.sessionManager?.observedRoundName ?? "–")")
+            Text("Current Round: \(bluetoothManager.sessionManager?.currentRoundName ?? "–")")
                 .foregroundColor(.white)
                 .bold()
-
-            ProgressView(value: bluetoothManager.currentForcePercentage, total: 100) {
+            
+            //--
+            ProgressView(value: isCountdownActive ? 0 : roundProgress) {
                 Text("Round Progress").font(.caption).foregroundColor(.gray)
-            }.accentColor(.green)
+            }
 
-            ProgressView(value: bluetoothManager.trainingProgressPercentage, total: 100) {
+            
+            ProgressView(value: (!isCountdownActive && bluetoothManager.isTrainingActive) ? bluetoothManager.trainingProgressPercentage : 0, total: 100) {
                 Text("Training Progress").font(.caption).foregroundColor(.gray)
-            }.accentColor(.blue)
+            }
+            .accentColor(.blue)
+            
+            //---
 
             Text("Elapsed Time: \(elapsedTime) sec")
                 .foregroundColor(.white)
                 .bold()
 
             Button(action: {
+                print("🖲️ STOP BUTTON TAPPED by user")
                 if !hasChallengeEnded {
-                    hasChallengeEnded = true
                     stopChallenge()
                 }
             }) {
@@ -165,7 +216,7 @@ struct ChallengeTrainingView: View {
             if isLeaderboardExpanded {
                 VStack(spacing: 14) {
                     let top5 = Array(sortedProgress.prefix(5))
-                    ForEach(Array(top5.enumerated()), id: \ .offset) { index, entry in
+                    ForEach(Array(top5.enumerated()), id: \.offset) { index, entry in
                         leaderboardRow(index: index + 1, entry: entry, highlight: entry.userId == userId)
                     }
 
@@ -183,9 +234,21 @@ struct ChallengeTrainingView: View {
         .padding(.top, 10)
     }
 
+    
+    
     private func startChallenge() {
+        print("🟢 Checking if challenge can start. hasChallengeEnded = \(hasChallengeEnded)")
+        guard !hasChallengeEnded else {
+            print("⚠️ startChallenge() called but challenge already ended.")
+            return
+        }
+        print("📍 runId: \(runId)")
+        
         UIApplication.shared.isIdleTimerDisabled = true
         disqualified = false
+        isCountdownActive = true
+
+        cleanupTimers() // 🧹 Ensure no timers leak from previous session
 
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.allowBluetooth, .mixWithOthers])
@@ -196,45 +259,83 @@ struct ChallengeTrainingView: View {
 
         bluetoothManager.announcer = announcer
         bluetoothManager.sessionManager = sessionManager
+        
+        // ✅ Pass challenge-ended state into the sessionManager
+        sessionManager.isChallengeEnded = { hasChallengeEnded }
+
+        
+        bluetoothManager.stopTrainingCallback = { [weak bluetoothManager] in
+            print("📴 stopTrainingCallback triggered from BluetoothManager")
+            if let manager = bluetoothManager {
+                if manager.stopTrainingCallback != nil {
+                    if !hasChallengeEnded {
+                        hasChallengeEnded = true
+                        print("📴 stopTrainingCallback triggered — stopping challenge")
+                        manager.stopTrainingCallback = nil
+                        stopChallenge()
+                    } else {
+                        print("⚠️ stopTrainingCallback triggered, but challenge already ended — skipping")
+                    }
+                }
+            }
+        }
 
         bluetoothManager.resetMetrics()
-        sessionManager.reset()
+        sessionManager.resetSession()
         bluetoothManager.configureSensorSource()
 
         announcer.startCountdownThenBeginTraining {
+            guard !hasChallengeEnded else {
+                print("⛔️ Countdown finished, but challenge already ended — aborting training start.")
+                return
+            }
+            announcer.start()
             bluetoothManager.isTrainingActive = true
-            sessionManager.startNewSession(with: training.rounds)
-            sessionManager.startSessionTimer()
+            announcer.trainingStarted = true
+            isCountdownActive = false
+
+            sessionManager.announcer = announcer
+            print("🆕 Starting new session with \(training.rounds.count) rounds, type: \(training.trainingType)")
+            sessionManager.startNewSession(with: training.rounds, type: training.trainingType)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                sessionManager.startSessionTimer()
+            }
+
             trainingStartTime = Date()
 
             print("📡 Observing progress for challengeId: \(challenge.id), runId: \(runId)")
+            progressManager.resetUserProgress(for: challenge.id, runId: runId, userId: userId)
             progressManager.observeProgress(for: challenge.id, runId: runId)
 
             elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                if let start = trainingStartTime {
-                    elapsedTime = Int(Date().timeIntervalSince(start))
-                }
+                guard bluetoothManager.isTrainingActive, !hasChallengeEnded else { return }
+
+                elapsedTime = sessionManager.activeElapsedTime
 
                 let cutoff = sessionManager.currentRound?.cutoffTime ?? 0
-                if cutoff > 0 && sessionManager.sessionElapsedTime >= cutoff {
+                if cutoff > 0 && sessionManager.activeElapsedTimeForCurrentRound >= cutoff {
                     disqualified = true
-                    if !hasChallengeEnded {
-                        hasChallengeEnded = true
-                        stopChallenge()
-                    }
-                }
-
-                if !hasChallengeEnded && bluetoothManager.trainingProgressPercentage >= 100 {
-                    hasChallengeEnded = true
+                    print("🛑 Disqualified — triggering stopChallenge() due to cutoff")
                     stopChallenge()
+                    return
                 }
 
+                if bluetoothManager.trainingProgressPercentage >= 100 {
+                    print("🎯 Training progress hit 100%")
+                    stopChallenge()
+                    return
+                }
+                
                 announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
             }
 
-            announcer.start()
-
             reportingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+                guard bluetoothManager.isTrainingActive, !hasChallengeEnded else {
+                    print("🛑 Skipping progress save — training inactive or ended.")
+                    return
+                }
+
                 let progress = ChallengeProgress(
                     userId: userId,
                     challengeId: challenge.id,
@@ -246,47 +347,98 @@ struct ChallengeTrainingView: View {
                     totalPoints: bluetoothManager.totalPoints,
                     isDisqualified: false,
                     roundName: sessionManager.currentRoundName,
-                    roundNumber: sessionManager.roundNumber,
-                    roundProgress: bluetoothManager.currentForcePercentage / 100,
+                    roundNumber: sessionManager.currentRoundIndex + 1,
+                    roundProgress: bluetoothManager.currentRoundProgressPercentage / 100,
                     createdAt: Date()
                 )
-                print("⬆️ Uploading progress: \(progress.nickname), runId: \(progress.runId), force: \(progress.totalForce)")
                 progressManager.updateProgress(progress)
             }
         }
     }
-
+    
+    
     private func stopChallenge() {
-        reportingTimer?.invalidate()
-        elapsedTimer?.invalidate()
-        bluetoothManager.isTrainingActive = false
-        announcer.stop()
+        guard !hasChallengeEnded else {
+            print("⚠️ stopChallenge() called but challenge already ended — ignoring.")
+            return
+        }
 
+        guard !isStopChallengeInProgress else {
+            print("⚠️ stopChallenge() already in progress — skipping.")
+            return
+        }
+
+        isStopChallengeInProgress = true
+        print("🖲️ stopChallenge initiated")
+        print("📍 runId: \(runId)")
+
+        // Stop session and announcer
+        UIApplication.shared.isIdleTimerDisabled = false
+        sessionManager.stopSession()
+        announcer.announceTrainingEnded()
+        cleanupTimers()
+        announcer.stop()
+        announcer.trainingStarted = false
+        sessionManager.announcer = nil
+
+        // Stop training and motion
+        bluetoothManager.isTrainingActive = false
+        bluetoothManager.resetMotionState()
+        bluetoothManager.stopTrainingCallback = nil
+
+        // Save summary LAST, before finalizing state
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
             elapsedTime: elapsedTime,
             disqualified: isUserDisqualified,
-            disqualifiedRound: isUserDisqualified ? bluetoothManager.sessionManager?.currentRoundName : nil,
+            disqualifiedRound: isUserDisqualified ? bluetoothManager.sessionManager?.currentRoundName ?? "Unknown" : nil,
             totalForce: bluetoothManager.totalForce,
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
             strikeCount: bluetoothManager.totalStrikes,
-            trainingGoalForce: training.rounds.map { $0.goalForce }.reduce(0.0, +),
+            trainingGoalForce: training.rounds.map { $0.goalForce ?? 0.0 }.reduce(0.0, +),
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,
             nickname: nickname
         )
 
         TrainingSummaryManager().saveSummary(summary) { result in
-            if case .failure(let error) = result {
-                print("⚠️ Failed to save training summary: \(error.localizedDescription)")
-            } else {
+            switch result {
+            case .success:
                 print("✅ Training summary saved")
+            case .failure(let error):
+                print("⚠️ Failed to save training summary: \(error.localizedDescription)")
             }
+
+            // Final cleanup AFTER save completes
+            hasChallengeEnded = true
+            isStopChallengeInProgress = false
+            print("⛔️ hasChallengeEnded is now TRUE")
+            print("✅ Challenge successfully stopped")
+
+            bluetoothManager.resetMetrics()
+            bluetoothManager.announcer = nil
+            bluetoothManager.sessionManager = nil
+            progressManager.stopObserving()
         }
     }
+    
+    
+    private func cleanupTimers() {
+        print("🧹 Cleanup called: invalidating timers and stopping announcer.")
 
+        reportingTimer?.invalidate()
+        reportingTimer = nil
+
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+
+        announcer.stop()
+        isCountdownActive = false
+
+    }
+    
     @ViewBuilder
     private func leaderboardRow(index: Int, entry: ChallengeProgress, highlight: Bool) -> some View {
         HStack(spacing: 16) {
