@@ -317,8 +317,8 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             currentRoundProgressPercentage = min((progressSoFar / goal) * 100.0, 100.0)
             print("📈 Round Progress: \(currentRoundProgressPercentage.rounded())% of goal \(goal)")
 
-            //if sessionManager.isCurrentRoundGoalMet {
-            if sessionManager.isCurrentRoundGoalMet && !sessionManager.hasHandledCurrentRound {
+            
+            if !sessionManager.hasHandledCurrentRound && progressSoFar >= goal {
                 print("✅ Round goal met — triggering round completion flow.")
                 sumForceInRound = 0
                 strikeCountInRound = 0
