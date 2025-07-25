@@ -57,55 +57,69 @@ struct HomeScreen: View {
                                 ForEach(trainings.indices, id: \.self) { index in
                                     let training = trainings[index]
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            HStack {
-                                                Text(training.name)
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                                if training.isPublic {
-                                                    Image(systemName: "person.2.fill")
-                                                        .foregroundColor(.gray)
+                                    ZStack(alignment: .topTrailing) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                HStack {
+                                                    Text(training.name)
+                                                        .font(.headline)
+                                                        .foregroundColor(.white)
+                                                    if training.isPublic {
+                                                        Image(systemName: "person.2.fill")
+                                                            .foregroundColor(.gray)
+                                                    }
                                                 }
+                                                Text("\(training.rounds.count) rounds")
+                                                    .font(.subheadline)
+                                                    .foregroundColor(.gray)
                                             }
-                                            Text("\(training.rounds.count) rounds")
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                        }
 
-                                        HStack {
-                                            Button(action: {
-                                                selectedTraining = training
-                                            }) {
-                                                Text("Select")
-                                                    .foregroundColor(.green)
-                                            }
-                                            .buttonStyle(.borderless)
-
-                                            Spacer()
-
-                                            if !training.isPublic || training.creatorNickname == nickname {
+                                            HStack {
                                                 Button(action: {
-                                                    navigationIntent = .editing(training)
+                                                    selectedTraining = training
                                                 }) {
-                                                    Image(systemName: "pencil")
+                                                    Text("Select")
+                                                        .foregroundColor(.green)
+                                                }
+                                                .buttonStyle(.borderless)
+
+                                                Spacer()
+
+                                                if !training.isPublic || training.creatorNickname == nickname {
+                                                    Button(action: {
+                                                        navigationIntent = .editing(training)
+                                                    }) {
+                                                        Image(systemName: "pencil")
+                                                            .foregroundColor(.gray)
+                                                    }
+                                                    .buttonStyle(.borderless)
+                                                }
+
+                                                Button(action: {
+                                                    deleteTraining(training)
+                                                }) {
+                                                    Image(systemName: "trash")
                                                         .foregroundColor(.gray)
                                                 }
                                                 .buttonStyle(.borderless)
                                             }
-
-                                            Button(action: {
-                                                deleteTraining(training)
-                                            }) {
-                                                Image(systemName: "trash")
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .buttonStyle(.borderless)
+                                            .padding(.top, 4)
                                         }
-                                        .padding(.top, 4)
+                                        .padding()
+                                        .background(Color.black)
+
+                                        if let badge = badgeForType(training.trainingType) {
+                                            Text(badge.label)
+                                                .font(.caption2)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(badge.color.opacity(0.6))
+                                                .clipShape(Capsule())
+                                                .padding([.top, .trailing], 6)
+                                        }
                                     }
-                                    .padding()
-                                    .background(Color.black)
 
                                     if index < trainings.count - 1 {
                                         Rectangle()
@@ -170,6 +184,17 @@ struct HomeScreen: View {
             .sheet(isPresented: $isShowingDownloadModal) {
                 DownloadPublicTrainingsView(onDownload: handleDownloadedPublicTraining)
             }
+        }
+    }
+
+    private func badgeForType(_ type: TrainingType) -> (label: String, color: Color)? {
+        switch type {
+        case .timeDriven:
+            return ("TIME", .blue)
+        case .forceDriven:
+            return ("FORCE", .purple)
+        case .strikesDriven:
+            return ("STRIKES", .green)
         }
     }
 
