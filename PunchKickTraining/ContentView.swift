@@ -288,7 +288,8 @@ struct ContentView: View {
         bluetoothManager.isTrainingActive = false
         triggerHaptic()
 
-        print("🧾 Saving summary with goalCompletion: \(sessionManager.trainingGoalCompletionPercentage)")
+        //print("🧾 Saving summary with goalCompletion: \(sessionManager.trainingGoalCompletionPercentage)")
+        print("🧾 Saving summary with goalCompletion: \(bluetoothManager.trainingProgressPercentage)")
         
         let summary = TrainingSummary(
             trainingName: training.name,
@@ -301,7 +302,6 @@ struct ContentView: View {
             averageForce: bluetoothManager.averageForce,
             strikeCount: bluetoothManager.totalStrikes,
             trainingGoalForce: training.rounds.map { $0.goalForce ?? 0 }.reduce(0, +),
-            //trainingGoalCompletionPercentage: sessionManager.trainingGoalCompletionPercentage,
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,
             nickname: profileManager.profile?.nickname ?? "Unknown"

@@ -226,6 +226,8 @@ struct TrainingEditorView: View {
                                             .background(Color.gray.opacity(0.2))
                                             .foregroundColor(.white)
                                             .cornerRadius(8)
+                                            .disabled(index == rounds.count - 1) // 🔒 Disable if last round
+                                            .opacity(index == rounds.count - 1 ? 0.4 : 1.0) // 🔘 Dim if disabled
                                     }
 
                                     Divider().background(Color.gray.opacity(0.3))
