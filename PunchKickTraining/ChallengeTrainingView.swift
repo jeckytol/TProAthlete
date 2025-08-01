@@ -317,6 +317,27 @@ struct ChallengeTrainingView: View {
                 if cutoff > 0 && sessionManager.activeElapsedTimeForCurrentRound >= cutoff {
                     disqualified = true
                     print("🛑 Disqualified — triggering stopChallenge() due to cutoff")
+                    //-----
+                    
+                    let finalProgress = ChallengeProgress(
+                        userId: userId,
+                        challengeId: challenge.id,
+                        runId: runId,
+                        nickname: nickname,
+                        avatarName: avatarName,
+                        totalForce: bluetoothManager.totalForce,
+                        totalStrikes: bluetoothManager.totalStrikes,
+                        totalPoints: bluetoothManager.totalPoints,
+                        isDisqualified: true, // ✅ override
+                        roundName: sessionManager.currentRoundName,
+                        roundNumber: sessionManager.currentRoundIndex + 1,
+                        roundProgress: bluetoothManager.currentRoundProgressPercentage / 100,
+                        createdAt: Date()
+                    )
+                    progressManager.updateProgress(finalProgress)
+                    
+                    //-----
+                    
                     stopChallenge()
                     return
                 }
@@ -381,18 +402,14 @@ struct ChallengeTrainingView: View {
         announcer.trainingStarted = false
         sessionManager.announcer = nil
 
-        // Stop training and motion
-        bluetoothManager.isTrainingActive = false
-        bluetoothManager.resetMotionState()
-        bluetoothManager.stopTrainingCallback = nil
 
         // Save summary LAST, before finalizing state
         let summary = TrainingSummary(
             trainingName: training.name,
             date: Date(),
             elapsedTime: elapsedTime,
-            disqualified: isUserDisqualified,
-            disqualifiedRound: isUserDisqualified ? bluetoothManager.sessionManager?.currentRoundName ?? "Unknown" : nil,
+            disqualified: disqualified,
+            disqualifiedRound: disqualified ? bluetoothManager.sessionManager?.currentRoundName ?? "Unknown" : nil,
             totalForce: bluetoothManager.totalForce,
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
@@ -402,6 +419,9 @@ struct ChallengeTrainingView: View {
             totalPoints: bluetoothManager.totalPoints,
             nickname: nickname
         )
+        
+        // 💥 Force-refresh leaderboard with final user result
+        progressManager.forceRefresh(for: challenge.id, runId: runId)
 
         TrainingSummaryManager().saveSummary(summary) { result in
             switch result {
@@ -410,6 +430,12 @@ struct ChallengeTrainingView: View {
             case .failure(let error):
                 print("⚠️ Failed to save training summary: \(error.localizedDescription)")
             }
+            
+            
+            // Stop training and motion
+            bluetoothManager.isTrainingActive = false
+            bluetoothManager.resetMotionState()
+            bluetoothManager.stopTrainingCallback = nil
 
             // Final cleanup AFTER save completes
             hasChallengeEnded = true

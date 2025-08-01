@@ -102,4 +102,28 @@ class ChallengeProgressManager: ObservableObject {
             }
         }
     }
+    
+    func forceRefresh(for challengeId: String, runId: String) {
+        db.collection(collection)
+            .whereField("challengeId", isEqualTo: challengeId)
+            .whereField("runId", isEqualTo: runId)
+            .order(by: "totalForce", descending: true)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    print("❌ Force refresh failed: \(error.localizedDescription)")
+                    return
+                }
+
+                let progresses: [ChallengeProgress] = snapshot?.documents.compactMap {
+                    try? $0.data(as: ChallengeProgress.self)
+                } ?? []
+
+                DispatchQueue.main.async {
+                    self.allProgress = progresses
+                    print("🔄 Leaderboard force-refreshed with \(progresses.count) participants.")
+                }
+            }
+    }
 }
