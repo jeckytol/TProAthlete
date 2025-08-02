@@ -28,7 +28,7 @@ class ChallengeProgressManager: ObservableObject {
         Challenge: \(progress.challengeId)
         Run: \(progress.runId)
         Total Points: \(progress.totalPoints)
-        Total Strikes: \(progress.totalStrikes)
+        Total Reps: \(progress.totalReps)
         Round: \(progress.roundName)
         Round Progress: \(String(format: "%.1f", progress.roundProgress))%
         Disqualified: \(progress.isDisqualified)

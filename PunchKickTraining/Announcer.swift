@@ -15,8 +15,8 @@ class Announcer: ObservableObject {
     @AppStorage("announceTime") var announceTime: Bool = true
     @AppStorage("timeAnnounceFrequency") var timeAnnounceFrequency: Int = 30
 
-    @AppStorage("announceStrikes") var announceStrikes: Bool = true
-    @AppStorage("strikeAnnounceFrequency") var strikeAnnounceFrequency: Int = 10
+    @AppStorage("announceReps") var announceReps: Bool = true
+    @AppStorage("repAnnounceFrequency") var repAnnounceFrequency: Int = 10
     
     @AppStorage("announceForce") private var announceForce: Bool = false
     @AppStorage("forceAnnounceFrequency") private var forceAnnounceFrequency: Int = 100
@@ -24,8 +24,8 @@ class Announcer: ObservableObject {
     @AppStorage("announceProgress") private var announceProgress: Bool = false
     @AppStorage("progressAnnounceFrequency") private var progressAnnounceFrequency: Int = 20
 
-    private var currentStrikeCount: Int = 0
-    private var lastAnnouncedStrikeCount: Int = 0
+    private var currentRepCount: Int = 0
+    private var lastAnnouncedRepCount: Int = 0
 
     @Published var visualCountdown: String? = nil
     @Published var isCountingDown: Bool = false
@@ -67,17 +67,17 @@ class Announcer: ObservableObject {
         trainingStarted = false
 
         lastAnnouncedTime = 0
-        lastAnnouncedStrikeCount = 0
-        currentStrikeCount = 0
+        lastAnnouncedRepCount = 0
+        currentRepCount = 0
     }
 
-    func updateStrikeCount(to newCount: Int) {
-        guard announceStrikes, trainingStarted else { return }
+    func updateRepCount(to newCount: Int) {
+        guard announceReps, trainingStarted else { return }
 
-        currentStrikeCount = newCount
-        if currentStrikeCount - lastAnnouncedStrikeCount >= strikeAnnounceFrequency {
-            lastAnnouncedStrikeCount = currentStrikeCount
-            speak("\(currentStrikeCount) strikes")
+        currentRepCount = newCount
+        if currentRepCount - lastAnnouncedRepCount >= repAnnounceFrequency {
+            lastAnnouncedRepCount = currentRepCount
+            speak("\(currentRepCount) reps")
         }
     }
 
@@ -192,9 +192,9 @@ class Announcer: ObservableObject {
                 if let force = round.goalForce, force > 0 {
                     goalAnnouncement = "Target: \(Int(force)) newtons"
                 }
-            case .strikesDriven:
-                if let strikes = round.goalStrikes, strikes > 0 {
-                    goalAnnouncement = "Target: \(strikes) strikes"
+            case .repsDriven:
+                if let reps = round.goalReps, reps > 0 {
+                    goalAnnouncement = "Target: \(reps) reps"
                 }
             case .timeDriven:
                 if let time = round.roundTime, time > 0 {

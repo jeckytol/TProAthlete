@@ -120,18 +120,18 @@ class ActivityDashboardViewModel: ObservableObject {
             let completed = filteredCurrent.filter { $0.trainingGoalCompletionPercentage == 100 }
             self.successRate = filteredCurrent.isEmpty ? 0 : Int((Double(completed.count) / Double(filteredCurrent.count)) * 100)
 
-            func totals(from list: [TrainingSummary]) -> (points: Int, force: Int, strikes: Int) {
+            func totals(from list: [TrainingSummary]) -> (points: Int, force: Int, reps: Int) {
                 var totalPoints = 0
                 var totalForce = 0
-                var totalStrikes = 0
+                var totalReps = 0
 
                 for s in list {
                     totalPoints += Int(s.totalPoints ?? 0)
                     totalForce += Int(s.totalForce)
-                    totalStrikes += s.strikeCount
+                    totalReps += s.repCount
                 }
 
-                return (totalPoints, totalForce, totalStrikes)
+                return (totalPoints, totalForce, totalReps)
             }
 
             let current = totals(from: filteredCurrent)
@@ -140,7 +140,7 @@ class ActivityDashboardViewModel: ObservableObject {
             self.individualKPIs = [
                 MetricKPI(label: "Total Points", value: current.points, previousValue: previous.points),
                 MetricKPI(label: "Total Force", value: current.force, previousValue: previous.force),
-                MetricKPI(label: "Total Strikes", value: current.strikes, previousValue: previous.strikes)
+                MetricKPI(label: "Total Reps", value: current.reps, previousValue: previous.reps)
             ]
         }
     }

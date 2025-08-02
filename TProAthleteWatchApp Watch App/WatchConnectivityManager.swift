@@ -83,9 +83,9 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
                 MotionProcessor.shared.minMotionDuration = minDuration
                 print("⚙️ Updated minMotionDuration to \(minDuration)")
             }
-            if let cooldown = settings["postStrikeCooldown"] as? Double {
-                MotionProcessor.shared.postStrikeCooldown = cooldown
-                print("⚙️ Updated postStrikeCooldown to \(cooldown)")
+            if let cooldown = settings["postRepCooldown"] as? Double {
+                MotionProcessor.shared.postRepCooldown = cooldown
+                print("⚙️ Updated postRepCooldown to \(cooldown)")
             }
             if let threshold = settings["accelerationThreshold"] as? Double {
                 MotionProcessor.shared.accelerationThreshold = threshold

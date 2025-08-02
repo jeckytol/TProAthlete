@@ -193,8 +193,8 @@ struct HomeScreen: View {
             return ("TIME", .blue)
         case .forceDriven:
             return ("FORCE", .purple)
-        case .strikesDriven:
-            return ("STRIKES", .green)
+        case .repsDriven:
+            return ("REPS", .green)
         }
     }
 
@@ -274,7 +274,7 @@ struct HomeScreen: View {
             guard let name = roundDict["name"] as? String else { return nil }
 
             let goalForce = roundDict["goalForce"] as? Double ?? 0
-            let goalStrikes = roundDict["goalStrikes"] as? Int
+            let goalReps = roundDict["goalReps"] as? Int
             let cutoffTime = roundDict["cutoffTime"] as? Int
             let roundTime = roundDict["roundTime"] as? Int
             let restTime = roundDict["restTime"] as? Int ?? 0
@@ -282,7 +282,7 @@ struct HomeScreen: View {
             return TrainingRound(
                 name: name,
                 goalForce: goalForce,
-                goalStrikes: goalStrikes,
+                goalReps: goalReps,
                 cutoffTime: cutoffTime,
                 roundTime: roundTime,
                 restTime: restTime

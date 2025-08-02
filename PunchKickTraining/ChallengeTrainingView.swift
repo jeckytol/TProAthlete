@@ -326,7 +326,7 @@ struct ChallengeTrainingView: View {
                         nickname: nickname,
                         avatarName: avatarName,
                         totalForce: bluetoothManager.totalForce,
-                        totalStrikes: bluetoothManager.totalStrikes,
+                        totalReps: bluetoothManager.totalReps,
                         totalPoints: bluetoothManager.totalPoints,
                         isDisqualified: true, // ✅ override
                         roundName: sessionManager.currentRoundName,
@@ -348,7 +348,7 @@ struct ChallengeTrainingView: View {
                     return
                 }
                 
-                announcer.updateStrikeCount(to: bluetoothManager.totalStrikes)
+                announcer.updateRepCount(to: bluetoothManager.totalReps)
             }
 
             reportingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
@@ -364,7 +364,7 @@ struct ChallengeTrainingView: View {
                     nickname: nickname,
                     avatarName: avatarName,
                     totalForce: bluetoothManager.totalForce,
-                    totalStrikes: bluetoothManager.totalStrikes,
+                    totalReps: bluetoothManager.totalReps,
                     totalPoints: bluetoothManager.totalPoints,
                     isDisqualified: false,
                     roundName: sessionManager.currentRoundName,
@@ -413,7 +413,7 @@ struct ChallengeTrainingView: View {
             totalForce: bluetoothManager.totalForce,
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
-            strikeCount: bluetoothManager.totalStrikes,
+            repCount: bluetoothManager.totalReps,
             trainingGoalForce: training.rounds.map { $0.goalForce ?? 0.0 }.reduce(0.0, +),
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,

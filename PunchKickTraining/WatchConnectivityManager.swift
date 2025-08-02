@@ -4,7 +4,7 @@ import WatchConnectivity
 // MARK: - Struct for Watch Metrics
 
 struct MetricUpdate: Codable {
-    let totalStrikes: Int
+    let totalReps: Int
     let totalForce: Double
     let maxForce: Double
     let averageForce: Double
@@ -141,7 +141,7 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         print("📩 Phone received raw message: \(message)")
 
         // Only attempt decoding if message has all required keys
-        let expectedKeys = ["totalStrikes", "totalForce", "maxForce", "averageForce", "timestamp"]
+        let expectedKeys = ["totalReps", "totalForce", "maxForce", "averageForce", "timestamp"]
         let hasAllKeys = expectedKeys.allSatisfy { message.keys.contains($0) }
 
         guard hasAllKeys else {

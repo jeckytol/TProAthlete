@@ -11,7 +11,7 @@ class MotionProcessor: ObservableObject {
 
     // MARK: - Settings (to be injected from iPhone)
     var accelerationThreshold: Double = 1.5
-    var postStrikeCooldown: TimeInterval = 0.2
+    var postRepCooldown: TimeInterval = 0.2
     var minMotionDuration: TimeInterval = 0.15
 
     // MARK: - Motion Tracking
@@ -21,10 +21,10 @@ class MotionProcessor: ObservableObject {
     private var motionStartVector: SIMD3<Double>?
     private var isMovementActive = false
     private var waitingForMotionToSettle = false
-    private var lastStrikeTime: Date?
+    private var lastRepTime: Date?
 
     // MARK: - Metrics
-    private(set) var totalStrikes = 0
+    private(set) var totalReps = 0
     private(set) var totalForce: Double = 0.0
     private(set) var maxForce: Double = 0.0
     private(set) var averageForce: Double = 0.0
@@ -80,9 +80,9 @@ class MotionProcessor: ObservableObject {
         let settlingThreshold = accelerationThreshold * 0.8
         let validationThreshold = accelerationThreshold * 1.1  // relaxed from 1.25
 
-        // Prevent too-frequent strikes (cooldown)
-        if let lastStrike = lastStrikeTime,
-           now.timeIntervalSince(lastStrike) < postStrikeCooldown {
+        // Prevent too-frequent reps (cooldown)
+        if let lastRep = lastRepTime,
+           now.timeIntervalSince(lastRep) < postRepCooldown {
             return
         }
 
@@ -120,7 +120,7 @@ class MotionProcessor: ObservableObject {
             return
         }
 
-        // Check for valid strike
+        // Check for valid rep
         if duration >= minMotionDuration && maxMagnitude >= validationThreshold {
             // Directional filtering
             if let startVector = motionStartVector {
@@ -136,11 +136,11 @@ class MotionProcessor: ObservableObject {
                 }
             }
 
-            // Compute force and register strike
+            // Compute force and register rep
             let averageMagnitude = currentMotionMagnitudes.reduce(0.0, +) / Double(currentMotionMagnitudes.count)
             let force = averageMagnitude * duration * 9.81 * 3.0
-            simulateStrike(force: force)
-            lastStrikeTime = now
+            simulateRep(force: force)
+            lastRepTime = now
             resetMotionState(settle: true)
         }
         // If duration was valid but max magnitude was just below threshold
@@ -150,7 +150,7 @@ class MotionProcessor: ObservableObject {
         }
         // Invalid motion, reset silently
         else if duration >= minMotionDuration && maxMagnitude < validationThreshold {
-            print("[Weak Motion] Max \(String(format: "%.2f", maxMagnitude)) < Validation Threshold \(String(format: "%.2f", validationThreshold)) — not a strike")
+            print("[Weak Motion] Max \(String(format: "%.2f", maxMagnitude)) < Validation Threshold \(String(format: "%.2f", validationThreshold)) — not a rep")
             resetMotionState()
         }
     }
@@ -164,13 +164,13 @@ class MotionProcessor: ObservableObject {
         waitingForMotionToSettle = settle
     }
     
-    private func simulateStrike(force: Double) {
-        totalStrikes += 1
+    private func simulateRep(force: Double) {
+        totalReps += 1
         totalForce += force
         if force > maxForce { maxForce = force }
-        averageForce = totalStrikes > 0 ? totalForce / Double(totalStrikes) : 0
+        averageForce = totalReps > 0 ? totalForce / Double(totalReps) : 0
 
-        print("[Strike] Force: \(String(format: "%.2f", force)) N | Total: \(totalStrikes)")
+        print("[Rep] Force: \(String(format: "%.2f", force)) N | Total: \(totalReps)")
     }
 
     private func sendMetricsToPhone() {
@@ -187,7 +187,7 @@ class MotionProcessor: ObservableObject {
         }
 
         let payload: [String: Any] = [
-            "totalStrikes": totalStrikes,
+            "totalReps": totalReps,
             "totalForce": totalForce,
             "maxForce": maxForce,
             "averageForce": averageForce,
@@ -202,7 +202,7 @@ class MotionProcessor: ObservableObject {
     }
 
     func resetMetrics() {
-        totalStrikes = 0
+        totalReps = 0
         totalForce = 0.0
         maxForce = 0.0
         averageForce = 0.0

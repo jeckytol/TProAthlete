@@ -6,24 +6,24 @@ enum TrainingClassification: String, Codable, CaseIterable {
 
 enum TrainingType: String, Codable, CaseIterable {
     case forceDriven
-    case strikesDriven
+    case repsDriven
     case timeDriven
 
     var description: String {
         switch self {
         case .forceDriven:
             return "Goal: Achieve target force per round as fast as possible."
-        case .strikesDriven:
-            return "Goal: Achieve target number of strikes per round as fast as possible."
+        case .repsDriven:
+            return "Goal: Achieve target number of reps per round as fast as possible."
         case .timeDriven:
-            return "Goal: Maximize Force/Strikes output within the given time."
+            return "Goal: Maximize Force/Reps output within the given time."
         }
     }
 
     var label: String {
         switch self {
         case .forceDriven: return "Force Driven"
-        case .strikesDriven: return "Strikes Driven"
+        case .repsDriven: return "Reps Driven"
         case .timeDriven: return "Time Driven"
         }
     }

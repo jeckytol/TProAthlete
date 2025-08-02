@@ -104,8 +104,8 @@ struct ContentView: View {
                         gaugeColor: Color.blue
                     )
                     MetricCircle(
-                        title: "Strikes",
-                        value: String(bluetoothManager.totalStrikes),
+                        title: "Reps",
+                        value: String(bluetoothManager.totalReps),
                         gaugeValue: nil,
                         gaugeColor: Color.red
                     )
@@ -261,8 +261,8 @@ struct ContentView: View {
 
             // ✅ Start a timer for round progress and disqualification check
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                // ✅ Check disqualification condition for force/strikes trainings
-                if (training.trainingType == .forceDriven || training.trainingType == .strikesDriven),
+                // ✅ Check disqualification condition for force/reps trainings
+                if (training.trainingType == .forceDriven || training.trainingType == .repsDriven),
                    let cutoff = sessionManager.currentRound?.cutoffTime,
                    cutoff > 0,
                    sessionManager.activeElapsedTimeForCurrentRound >= cutoff,
@@ -300,7 +300,7 @@ struct ContentView: View {
             totalForce: bluetoothManager.totalForce,
             maxForce: bluetoothManager.maxForce,
             averageForce: bluetoothManager.averageForce,
-            strikeCount: bluetoothManager.totalStrikes,
+            repCount: bluetoothManager.totalReps,
             trainingGoalForce: training.rounds.map { $0.goalForce ?? 0 }.reduce(0, +),
             trainingGoalCompletionPercentage: bluetoothManager.trainingProgressPercentage,
             totalPoints: bluetoothManager.totalPoints,

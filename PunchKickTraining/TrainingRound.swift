@@ -6,7 +6,7 @@ struct TrainingRound: Identifiable, Codable {
 
     // Strength Driven
     var goalForce: Double? = nil
-    var goalStrikes: Int? = nil
+    var goalReps: Int? = nil
     var cutoffTime: Int? = nil  // Applies only to Strength Driven
 
     // Time Driven
@@ -19,7 +19,7 @@ struct TrainingRound: Identifiable, Codable {
         id: UUID = UUID(),
         name: String,
         goalForce: Double? = nil,
-        goalStrikes: Int? = nil,
+        goalReps: Int? = nil,
         cutoffTime: Int? = nil,
         roundTime: Int? = nil,
         restTime: Int = 0
@@ -27,7 +27,7 @@ struct TrainingRound: Identifiable, Codable {
         self.id = id
         self.name = name
         self.goalForce = goalForce
-        self.goalStrikes = goalStrikes
+        self.goalReps = goalReps
         self.cutoffTime = cutoffTime
         self.roundTime = roundTime
         self.restTime = restTime

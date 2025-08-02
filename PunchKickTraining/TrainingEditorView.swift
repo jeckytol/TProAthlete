@@ -163,14 +163,14 @@ struct TrainingEditorView: View {
                                         }
                                     }
 
-                                    if trainingType == .strikesDriven {
+                                    if trainingType == .repsDriven {
                                         HStack {
-                                            Text("Strikes Goal")
+                                            Text("Reps Goal")
                                                 .foregroundColor(.gray)
                                             Spacer()
                                             TextField("", value: Binding(
-                                                get: { rounds[index].goalStrikes ?? 0 },
-                                                set: { rounds[index].goalStrikes = $0 == 0 ? nil : $0 }
+                                                get: { rounds[index].goalReps ?? 0 },
+                                                set: { rounds[index].goalReps = $0 == 0 ? nil : $0 }
                                             ), formatter: NumberFormatter())
                                                 .keyboardType(.numberPad)
                                                 .padding(8)
@@ -238,7 +238,7 @@ struct TrainingEditorView: View {
                                 rounds.append(TrainingRound(
                                     name: exercises.first?.name ?? "New Round",
                                     goalForce: trainingType == .forceDriven ? 1000 : 0,
-                                    goalStrikes: trainingType == .strikesDriven ? 10 : nil,
+                                    goalReps: trainingType == .repsDriven ? 10 : nil,
                                     cutoffTime: nil,
                                     roundTime: trainingType == .timeDriven ? 60 : nil,
                                     restTime: 0
@@ -324,14 +324,14 @@ struct TrainingEditorView: View {
         for i in sanitizedRounds.indices {
             switch trainingType {
             case .forceDriven:
-                sanitizedRounds[i].goalStrikes = nil
+                sanitizedRounds[i].goalReps = nil
                 sanitizedRounds[i].roundTime = nil
-            case .strikesDriven:
+            case .repsDriven:
                 sanitizedRounds[i].goalForce = 0
                 sanitizedRounds[i].roundTime = nil
             case .timeDriven:
                 sanitizedRounds[i].goalForce = 0
-                sanitizedRounds[i].goalStrikes = nil
+                sanitizedRounds[i].goalReps = nil
                 sanitizedRounds[i].cutoffTime = nil
             }
         }
@@ -394,7 +394,7 @@ struct TrainingEditorView: View {
             "rounds": training.rounds.map { [
                 "name": $0.name,
                 "goalForce": $0.goalForce,
-                "goalStrikes": $0.goalStrikes ?? 0,
+                "goalReps": $0.goalReps ?? 0,
                 "cutoffTime": $0.cutoffTime ?? 0,
                 "roundTime": $0.roundTime ?? 0,
                 "restTime": $0.restTime

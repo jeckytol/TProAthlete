@@ -8,7 +8,7 @@
 import Foundation
 
 struct MetricUpdate: Codable {
-    let totalStrikes: Int
+    let totalReps: Int
     let totalForce: Double
     let maxForce: Double
     let averageForce: Double

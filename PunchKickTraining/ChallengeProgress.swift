@@ -20,7 +20,7 @@ struct ChallengeProgress: Codable, Identifiable {
     var avatarName: String?
 
     var totalForce: Double       // Accumulated force
-    var totalStrikes: Int        // Count of strikes
+    var totalReps: Int        // Count of reps
     var totalPoints: Double 
     var isDisqualified: Bool
 

@@ -26,7 +26,7 @@ struct TrainingCertificateView: View {
                     certificateRow(label: "Elapsed Time", value: formatTime(summary.elapsedTime), icon: "timer")
                     certificateRow(label: "Total Force", value: String(format: "%.0f", summary.totalForce), icon: "bolt.fill")
                     certificateRow(label: "Total Points", value: String(format: "%.0f", summary.totalPoints ?? 0.0), icon: "star.circle.fill")
-                    certificateRow(label: "Strikes", value: "\(summary.strikeCount)", icon: "flame.fill")
+                    certificateRow(label: "Reps", value: "\(summary.repCount)", icon: "flame.fill")
                     certificateRow(label: "Goal Completion", value: "\(Int(summary.trainingGoalCompletionPercentage))%", icon: "checkmark.seal.fill")
 
                     Spacer(minLength: 16)

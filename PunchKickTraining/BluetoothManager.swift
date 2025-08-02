@@ -18,7 +18,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     
     // MARK: - Settings & State
     @AppStorage("accelerationThreshold") var accelerationThreshold: Double = 1.5
-    @AppStorage("postStrikeCooldown") var postStrikeCooldown: TimeInterval = 0.2
+    @AppStorage("postRepCooldown") var postRepCooldown: TimeInterval = 0.2
     @AppStorage("minMotionDuration") var minMotionDuration: TimeInterval = 0.15
     
     @AppStorage("sensorSource") var sensorSource: String = "Phone" {
@@ -65,7 +65,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     var stopTrainingCallback: (() -> Void)?
     
     // MARK: - Metrics
-    @Published var totalStrikes = 0
+    @Published var totalReps = 0
     @Published var totalForce: Double = 0.0
     @Published var maxForce: Double = 0.0
     @Published var averageForce: Double = 0.0
@@ -73,11 +73,11 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     //@Published var currentForcePercentage: Double = 0.0
     @Published var currentRoundProgressPercentage: Double = 0.0
     @Published var sumForceInRound: Double = 0.0
-    @Published var strikeCountInRound: Int = 0
+    @Published var repCountInRound: Int = 0
     @Published var totalPoints: Double = 0.0
     
     @Published var forcePerRound: [Double] = []
-    @Published var strikesPerRound: [Int] = []
+    @Published var repsPerRound: [Int] = []
     
     private var lastAxisDirection: [String: Double] = [:]
     private var motionStartTime: Date? = nil
@@ -86,7 +86,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     private var isMovementActive = false
     private var motionStartVector: SIMD3<Double>?
     private var waitingForMotionToSettle = false
-    private var lastStrikeTime: Date?
+    private var lastRepTime: Date?
     
     private let motionManager = CMMotionManager()
     private var hasCalledStop = false
@@ -206,9 +206,9 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         let magnitude = simd_length(currentVector)
         let settlingThreshold = accelerationThreshold * 0.9
 
-        if let lastStrike = lastStrikeTime,
-           now.timeIntervalSince(lastStrike) < postStrikeCooldown {
-            print("🕒 Cooling down: \(now.timeIntervalSince(lastStrike).rounded())s elapsed")
+        if let lastRep = lastRepTime,
+           now.timeIntervalSince(lastRep) < postRepCooldown {
+            print("🕒 Cooling down: \(now.timeIntervalSince(lastRep).rounded())s elapsed")
             return
         }
 
@@ -245,21 +245,21 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             return
         }
 
-        // Trigger a strike
+        // Trigger a rep
         if duration >= minMotionDuration, maxMagnitude >= accelerationThreshold {
             let averageMagnitude = currentMotionMagnitudes.reduce(0.0, +) / Double(currentMotionMagnitudes.count)
             let force = averageMagnitude * duration * 9.81 * 3.0
 
             print("""
-            🎯 New Strike Detected
+            🎯 New Rep Detected
             print("- Duration: \(String(format: "%.3f", duration))s")
             - Avg Mag: \(averageMagnitude.rounded())
             - Force: \(force.rounded())N
             """)
 
-            simulateStrike(force: force)
+            simulateRep(force: force)
 
-            lastStrikeTime = now
+            lastRepTime = now
             isMovementActive = false
             currentMotionStartTime = nil
             currentMotionMagnitudes = []
@@ -269,21 +269,21 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     }
     //----
     
-    // MARK: - Simulate Strike with Logs
+    // MARK: - Simulate Rep with Logs
 
-    private func simulateStrike(force: Double) {
+    private func simulateRep(force: Double) {
         guard isTrainingActive else { return }
 
-        totalStrikes += 1
+        totalReps += 1
         totalForce += force
-        strikeCountInRound += 1
+        repCountInRound += 1
         sumForceInRound += force
 
         if force > maxForce { maxForce = force }
-        averageForce = totalStrikes > 0 ? (totalForce / Double(totalStrikes)) : 0
+        averageForce = totalReps > 0 ? (totalForce / Double(totalReps)) : 0
         currentForce = force
 
-        announcer?.updateStrikeCount(to: totalStrikes)
+        announcer?.updateRepCount(to: totalReps)
         announcer?.maybeAnnounceForce(totalForce)
         announcer?.maybeAnnounceProgress(trainingProgressPercentage)
 
@@ -291,11 +291,11 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             if currentRoundIndex >= forcePerRound.count {
                 forcePerRound += Array(repeating: 0.0, count: currentRoundIndex - forcePerRound.count + 1)
             }
-            if currentRoundIndex >= strikesPerRound.count {
-                strikesPerRound += Array(repeating: 0, count: currentRoundIndex - strikesPerRound.count + 1)
+            if currentRoundIndex >= repsPerRound.count {
+                repsPerRound += Array(repeating: 0, count: currentRoundIndex - repsPerRound.count + 1)
             }
             forcePerRound[currentRoundIndex] += force
-            strikesPerRound[currentRoundIndex] += 1
+            repsPerRound[currentRoundIndex] += 1
         }
 
         if let currentRoundName = sessionManager?.currentRound?.name,
@@ -307,12 +307,12 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         
         //Round Goal tracking
         if let sessionManager = sessionManager,
-           sessionManager.trainingType == .forceDriven || sessionManager.trainingType == .strikesDriven,
+           sessionManager.trainingType == .forceDriven || sessionManager.trainingType == .repsDriven,
            let goal = sessionManager.currentRoundGoal, goal > 0 {
 
             let progressSoFar: Double = sessionManager.trainingType == .forceDriven
                 ? sumForceInRound
-                : Double(strikeCountInRound)
+                : Double(repCountInRound)
 
             currentRoundProgressPercentage = min((progressSoFar / goal) * 100.0, 100.0)
             print("📈 Round Progress: \(currentRoundProgressPercentage.rounded())% of goal \(goal)")
@@ -321,7 +321,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             if !sessionManager.hasHandledCurrentRound && progressSoFar >= goal {
                 print("✅ Round goal met — triggering round completion flow.")
                 sumForceInRound = 0
-                strikeCountInRound = 0
+                repCountInRound = 0
                 currentRoundProgressPercentage = 0
                 sessionManager.handleRoundCompletion()
             }
@@ -336,7 +336,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
 
         if progress >= 100.0, !hasCalledStop {
             hasCalledStop = true
-            print("🏁 Training Completed — Total Force: \(totalForce.rounded()), Total Strikes: \(totalStrikes)")
+            print("🏁 Training Completed — Total Force: \(totalForce.rounded()), Total Reps: \(totalReps)")
             sessionManager?.stopSessionTimer()
             announcer?.trainingStarted = false
 
@@ -357,7 +357,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             let activeElapsed = sessionManager.activeElapsedTime
             return min((Double(activeElapsed) / Double(totalTime)) * 100.0, 100.0)
 
-        case .forceDriven, .strikesDriven:
+        case .forceDriven, .repsDriven:
             let rounds = sessionManager.rounds
 
             let currentProgress = rounds.enumerated().map { index, round in
@@ -365,10 +365,10 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
                    let goalForce = round.goalForce, goalForce > 0 {
                     let achieved = forcePerRound.indices.contains(index) ? forcePerRound[index] : 0.0
                     return min(achieved, goalForce)
-                } else if sessionManager.trainingType == .strikesDriven,
-                          let goalStrikes = round.goalStrikes, goalStrikes > 0 {
-                    let achieved = strikesPerRound.indices.contains(index) ? Double(strikesPerRound[index]) : 0.0
-                    return min(achieved, Double(goalStrikes))
+                } else if sessionManager.trainingType == .repsDriven,
+                          let goalReps = round.goalReps, goalReps > 0 {
+                    let achieved = repsPerRound.indices.contains(index) ? Double(repsPerRound[index]) : 0.0
+                    return min(achieved, Double(goalReps))
                 }
                 return 0.0
             }.reduce(0.0, +)
@@ -377,7 +377,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
                 if sessionManager.trainingType == .forceDriven {
                     return round.goalForce ?? 0
                 } else {
-                    return Double(round.goalStrikes ?? 0)
+                    return Double(round.goalReps ?? 0)
                 }
             }.reduce(0.0, +)
 
@@ -387,14 +387,14 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     }
 
     func resetMetrics() {
-        totalStrikes = 0
+        totalReps = 0
         totalForce = 0.0
         maxForce = 0.0
         averageForce = 0.0
         currentForce = 0.0
         currentRoundProgressPercentage = 0.0
         sumForceInRound = 0.0
-        strikeCountInRound = 0
+        repCountInRound = 0
         totalPoints = 0.0
         lastAxisDirection = [:]
         motionStartTime = nil
@@ -405,21 +405,21 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         if let sessionManager = sessionManager {
             let roundCount = sessionManager.rounds.count
             forcePerRound = Array(repeating: 0.0, count: roundCount)
-            strikesPerRound = Array(repeating: 0, count: roundCount)
+            repsPerRound = Array(repeating: 0, count: roundCount)
         } else {
             forcePerRound = []
-            strikesPerRound = []
+            repsPerRound = []
         }
     }
 
     func updateMetricsFromWatch(_ update: MetricUpdate) {
         guard isTrainingActive else { return }
         DispatchQueue.main.async {
-            self.totalStrikes = update.totalStrikes
+            self.totalReps = update.totalReps
             self.totalForce = update.totalForce
             self.maxForce = update.maxForce
             self.averageForce = update.averageForce
-            self.announcer?.updateStrikeCount(to: update.totalStrikes)
+            self.announcer?.updateRepCount(to: update.totalReps)
         }
     }
     

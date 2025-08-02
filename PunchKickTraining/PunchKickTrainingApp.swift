@@ -41,5 +41,12 @@ struct PunchKickTrainingApp: App {
                 .environmentObject(profileManager)
                 .environmentObject(bluetoothManager)
         }
+        
+        //----
+        //WindowGroup {
+            //AdminUtilityView()
+        //}
+        //----
     }
+        
 }

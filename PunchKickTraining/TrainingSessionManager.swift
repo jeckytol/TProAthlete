@@ -228,8 +228,8 @@ class TrainingSessionManager: ObservableObject {
         switch trainingType {
         case .forceDriven:
             return rounds[currentRoundIndex].goalForce
-        case .strikesDriven:
-            return Double(rounds[currentRoundIndex].goalStrikes ?? 0)
+        case .repsDriven:
+            return Double(rounds[currentRoundIndex].goalReps ?? 0)
         case .timeDriven:
             return Double(rounds[currentRoundIndex].roundTime ?? 0)
         }
@@ -237,7 +237,7 @@ class TrainingSessionManager: ObservableObject {
 
     public var isCurrentRoundGoalMet: Bool {
         guard isSessionActive else { return false }
-        guard trainingType == .forceDriven || trainingType == .strikesDriven,
+        guard trainingType == .forceDriven || trainingType == .repsDriven,
               let goal = currentRoundGoal, goal > 0,
               let bluetooth = bluetoothManager else { return false }
 
@@ -245,8 +245,8 @@ class TrainingSessionManager: ObservableObject {
         switch trainingType {
         case .forceDriven:
             progressSoFar = bluetooth.sumForceInRound
-        case .strikesDriven:
-            progressSoFar = Double(bluetooth.strikeCountInRound)
+        case .repsDriven:
+            progressSoFar = Double(bluetooth.repCountInRound)
         default:
             return false
         }
@@ -263,8 +263,8 @@ class TrainingSessionManager: ObservableObject {
         rounds.map { $0.goalForce ?? 0 }.reduce(0, +)
     }
 
-    public var totalGoalStrikes: Int {
-        rounds.map { $0.goalStrikes ?? 0 }.reduce(0, +)
+    public var totalGoalReps: Int {
+        rounds.map { $0.goalReps ?? 0 }.reduce(0, +)
     }
 
     func cancelRestTimer() {

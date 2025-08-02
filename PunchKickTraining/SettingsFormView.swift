@@ -5,13 +5,13 @@ struct SettingsFormView: View {
     @ObservedObject var profileManager: UserProfileManager
 
     @AppStorage("accelerationThreshold") var accelerationThreshold: Double = 1.5
-    @AppStorage("strikeCooldown") var strikeCooldown: TimeInterval = 0.8
-    @AppStorage("postStrikeCooldown") var postStrikeCooldown: TimeInterval = 0.3
+    @AppStorage("repCooldown") var repCooldown: TimeInterval = 0.8
+    @AppStorage("postRepCooldown") var postRepCooldown: TimeInterval = 0.3
     @AppStorage("minMotionDuration") var minMotionDuration: TimeInterval = 0.3
     @AppStorage("announceTime") var announceTime: Bool = true
     @AppStorage("timeAnnounceFrequency") var timeAnnounceFrequency: Int = 30
-    @AppStorage("announceStrikes") var announceStrikes: Bool = true
-    @AppStorage("strikeAnnounceFrequency") var strikeAnnounceFrequency: Int = 10
+    @AppStorage("announceReps") var announceReps: Bool = true
+    @AppStorage("repAnnounceFrequency") var repAnnounceFrequency: Int = 10
     @AppStorage("sensorSource") var sensorSource: String = "Phone"
     @AppStorage("nickname") private var nickname: String = ""
     @AppStorage("selectedAvatar") private var selectedAvatar: String = "avatar_bear"
@@ -111,7 +111,7 @@ struct SettingsFormView: View {
                 .pickerStyle(SegmentedPickerStyle())
 
                 LabeledSlider(label: "Sensitivity", value: $accelerationThreshold, range: 1.0...2.5)
-                LabeledSlider(label: "Post-Strike Cooldown (sec)", value: $postStrikeCooldown, range: 0.1...1.0)
+                LabeledSlider(label: "Post-Rep Cooldown (sec)", value: $postRepCooldown, range: 0.1...1.0)
                 LabeledSlider(label: "Min Motion Duration (sec)", value: $minMotionDuration, range: 0.0...1.0)
             }
 
@@ -128,10 +128,10 @@ struct SettingsFormView: View {
                     }
                 }
 
-                Toggle("Announce Strike Count", isOn: $announceStrikes)
+                Toggle("Announce Rep Count", isOn: $announceReps)
 
-                if announceStrikes {
-                    Picker("Strike Frequency", selection: $strikeAnnounceFrequency) {
+                if announceReps {
+                    Picker("Rep Frequency", selection: $repAnnounceFrequency) {
                         ForEach([5, 10, 20, 25, 50], id: \.self) {
                             Text("Every \($0)")
                         }
@@ -204,12 +204,12 @@ struct SettingsFormView: View {
     // MARK: - Reset Settings
     private func resetAllSettings() {
         accelerationThreshold = 1.3
-        postStrikeCooldown = 0.3
+        postRepCooldown = 0.3
         minMotionDuration = 0.2
         announceTime = true
         timeAnnounceFrequency = 30
-        announceStrikes = true
-        strikeAnnounceFrequency = 10
+        announceReps = true
+        repAnnounceFrequency = 10
         sensorSource = "Phone"
     }
 }

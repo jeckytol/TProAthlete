@@ -20,7 +20,7 @@ struct TrainingSummary: Codable, Identifiable {
     var totalForce: Double
     var maxForce: Double
     var averageForce: Double
-    var strikeCount: Int
+    var repCount: Int
     var trainingGoalForce: Double
     var trainingGoalCompletionPercentage: Double
     var totalPoints: Double?
