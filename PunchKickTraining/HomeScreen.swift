@@ -117,12 +117,12 @@ struct HomeScreen: View {
                                                 }) {
                                                     Text("View Clip")
                                                         .font(.caption)
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(.gray)
                                                         .padding(.horizontal, 8)
                                                         .padding(.vertical, 4)
                                                         .overlay(
                                                             RoundedRectangle(cornerRadius: 10)
-                                                                .stroke(Color.blue, lineWidth: 1)
+                                                                .stroke(Color.gray, lineWidth: 1)
                                                         )
                                                 }
                                                 .buttonStyle(.plain)
