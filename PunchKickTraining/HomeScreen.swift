@@ -21,6 +21,8 @@ enum NavigationIntent: Identifiable, Equatable {
     }
 }
 
+
+
 struct HomeScreen: View {
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @Binding var selectedTraining: SavedTraining?
@@ -28,6 +30,8 @@ struct HomeScreen: View {
     @State private var navigationIntent: NavigationIntent? = nil
     @AppStorage("nickname") private var nickname: String = ""
     @State private var isShowingDownloadModal = false
+    @State private var isShowingClip = false
+    @State private var selectedClipTraining: SavedTraining? = nil
 
     var body: some View {
         NavigationView {
@@ -102,8 +106,27 @@ struct HomeScreen: View {
                                                         .foregroundColor(.gray)
                                                 }
                                                 .buttonStyle(.borderless)
+                                            
                                             }
                                             .padding(.top, 4)
+                                            
+                                            HStack {
+                                                Spacer()
+                                                Button(action: {
+                                                    selectedClipTraining = training
+                                                }) {
+                                                    Text("View Clip")
+                                                        .font(.caption)
+                                                        .foregroundColor(.blue)
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 4)
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 10)
+                                                                .stroke(Color.blue, lineWidth: 1)
+                                                        )
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
                                         }
                                         .padding()
                                         .background(Color.black)
@@ -184,6 +207,14 @@ struct HomeScreen: View {
             .sheet(isPresented: $isShowingDownloadModal) {
                 DownloadPublicTrainingsView(onDownload: handleDownloadedPublicTraining)
             }
+            
+            //---
+            
+            .sheet(item: $selectedClipTraining) { training in
+                TrainingSummaryClipView(training: training)
+            }
+            
+            //---
         }
     }
 
